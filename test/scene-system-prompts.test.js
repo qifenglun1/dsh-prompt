@@ -341,6 +341,106 @@ test('generated scene import rolls back all keys when storage fails', () => {
   assert.equal(testApi.buildItems(t).filter((item) => item.categoryKey === 'user:失败场景').length, 0)
 })
 
+test('scene and card order persist in the library and apply to the scene model', () => {
+  const { testApi, storage } = loadClient({
+    'dsh.prompt-library.categories.v1': JSON.stringify(['我的场景']),
+  })
+  const t = (key) => testApi.EN[key] ?? key
+  const items = testApi.buildItems(t)
+  const fallbackScenes = testApi.categoriesOf(items, ['我的场景'], t)
+    .map((entry) => entry.key)
+    .filter((key) => key !== 'builtin:meta')
+  assert.equal(fallbackScenes.length, 11)
+  assert.equal(fallbackScenes.at(-1), 'user:我的场景')
+
+  assert.equal(testApi.moveSceneOrder('builtin:legal', 'builtin:workplace', fallbackScenes, 'before'), true)
+  assert.equal(testApi.getSceneOrderSnapshot()[0], 'builtin:legal')
+  assert.equal(testApi.getSceneOrderSnapshot().length, 11)
+  assert.equal(storage.get('dsh.prompt-library.scene-order.v1').includes('builtin:legal'), true)
+  assert.equal(testApi.categoriesOf(items, ['我的场景'], t).filter((entry) => entry.key !== 'builtin:meta')[0].key, 'builtin:legal')
+
+  const workplaceIds = testApi.sceneCardsFor(items, 'builtin:workplace').map((item) => item.id)
+  assert.equal(workplaceIds.length, 10)
+  assert.equal(testApi.moveCardOrder('builtin:workplace', workplaceIds[9], workplaceIds[0], workplaceIds, 'before'), true)
+  assert.equal(testApi.sceneCardsFor(items, 'builtin:workplace')[0].id, workplaceIds[9])
+  assert.equal(storage.get('dsh.prompt-library.card-order.v1').includes(workplaceIds[9]), true)
+
+  testApi.renameSceneOrderKey('user:我的场景', 'user:新场景')
+  testApi.renameCardOrderCategory('user:我的场景', 'user:新场景')
+  assert.ok(testApi.getSceneOrderSnapshot().includes('user:新场景'))
+  testApi.removeSceneOrderKey('user:新场景')
+  assert.equal(testApi.getSceneOrderSnapshot().includes('user:新场景'), false)
+  testApi.removeCardOrderCategory('user:新场景')
+  assert.equal(testApi.getCardOrderSnapshot()['user:新场景'], undefined)
+})
+
+test('order stores restore from storage and keep old state on write failure', () => {
+  const sceneOrder = ['builtin:legal', 'builtin:workplace']
+  const cardOrder = { 'builtin:workplace': ['builtin:official-notice', 'builtin:official-report'] }
+  const { testApi, window } = loadClient({
+    'dsh.prompt-library.scene-order.v1': JSON.stringify(sceneOrder),
+    'dsh.prompt-library.card-order.v1': JSON.stringify(cardOrder),
+  })
+  assert.deepEqual(Array.from(testApi.getSceneOrderSnapshot()), sceneOrder)
+  assert.deepEqual(JSON.parse(JSON.stringify(testApi.getCardOrderSnapshot())), cardOrder)
+
+  const t = (key) => testApi.EN[key] ?? key
+  const items = testApi.buildItems(t)
+  const fallback = testApi.categoriesOf(items, [], t)
+    .map((entry) => entry.key)
+    .filter((key) => key !== 'builtin:meta')
+  window.localStorage.setItem = () => {
+    throw new Error('storage unavailable')
+  }
+  assert.equal(testApi.moveSceneOrder('builtin:workplace', 'builtin:legal', fallback, 'before'), false)
+  assert.deepEqual(Array.from(testApi.getSceneOrderSnapshot()), sceneOrder)
+})
+
+test('restoring default order clears both custom order stores atomically', () => {
+  const { testApi, storage, window } = loadClient()
+  assert.equal(testApi.setSceneOrder(['builtin:legal', 'builtin:workplace']), true)
+  assert.equal(testApi.setCardOrder({ 'builtin:workplace': ['builtin:official-notice'] }), true)
+  assert.equal(testApi.resetAllOrder(), true)
+  assert.equal(testApi.getSceneOrderSnapshot().length, 0)
+  assert.deepEqual(JSON.parse(JSON.stringify(testApi.getCardOrderSnapshot())), {})
+  assert.equal(storage.get('dsh.prompt-library.scene-order.v1'), '[]')
+  assert.equal(storage.get('dsh.prompt-library.card-order.v1'), '{}')
+
+  assert.equal(testApi.setSceneOrder(['builtin:legal']), true)
+  assert.equal(testApi.setCardOrder({ 'builtin:legal': ['builtin:legal-intake'] }), true)
+  window.localStorage.setItem = () => {
+    throw new Error('storage unavailable')
+  }
+  assert.equal(testApi.resetAllOrder(), false)
+  assert.deepEqual(Array.from(testApi.getSceneOrderSnapshot()), ['builtin:legal'])
+  assert.deepEqual(JSON.parse(JSON.stringify(testApi.getCardOrderSnapshot())), { 'builtin:legal': ['builtin:legal-intake'] })
+})
+
+test('restoring an order snapshot supports cancel semantics', () => {
+  const { testApi } = loadClient()
+  assert.equal(testApi.setSceneOrder(['builtin:legal', 'builtin:workplace']), true)
+  assert.equal(testApi.setCardOrder({ 'builtin:workplace': ['builtin:official-notice'] }), true)
+  assert.equal(testApi.restoreAllOrder(['builtin:workplace', 'builtin:legal'], {}), true)
+  assert.deepEqual(Array.from(testApi.getSceneOrderSnapshot()), ['builtin:workplace', 'builtin:legal'])
+  assert.deepEqual(JSON.parse(JSON.stringify(testApi.getCardOrderSnapshot())), {})
+})
+
+test('card order entries are cleaned when templates are created, recategorized, and deleted', () => {
+  const { testApi } = loadClient()
+  const t = (key) => testApi.EN[key] ?? key
+  testApi.setCardOrder({ 'builtin:workplace': ['missing-old-id'] })
+  testApi.createTemplate({ title: '测试卡片', body: '请处理测试任务。', category: testApi.EN['category.workplace'] }, t)
+  const created = testApi.buildItems(t).find((item) => item.title === '测试卡片')
+  assert.ok(created)
+  assert.ok(testApi.getCardOrderSnapshot()['builtin:workplace'].includes(created.id))
+
+  testApi.updateTemplate(created.id, { category: '新分类' }, t)
+  assert.equal(testApi.getCardOrderSnapshot()['builtin:workplace'].includes(created.id), false)
+
+  testApi.deleteTemplate(created.id)
+  assert.equal(testApi.buildItems(t).some((item) => item.id === created.id), false)
+})
+
 test('existing user scenes are preserved when their labels match built-in categories', () => {
   const { testApi } = loadClient({
     'dsh.prompt-library.categories.v1': JSON.stringify(['公文写作']),

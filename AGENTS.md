@@ -179,9 +179,11 @@ Use `ctx.slots.inject(...)` inside `ctx.effect(...)` and return its disposer. Do
 
 - `dsh.prompt-library.templates.v1` — user templates (`id`, `title`, `body`, `category`, `updatedAt`).
 - `dsh.prompt-library.categories.v1` — categories that exist independently of templates. If missing, categories from saved templates are migrated in.
+- `dsh.prompt-library.scene-order.v1` — custom scene order set from the left library Reorder dialog.
+- `dsh.prompt-library.card-order.v1` — custom card order per scene set from the same dialog.
 - Built-in work presets are the 55 rows in `PRESET_SCENES` in `client.js`: 10 categories; `workplace` has 10 subscenes, `legal` has 5, and the other 8 have five each. They use Simplified-Chinese starter prompts/descriptions/System Prompts and an execution mode. `META_SCENES` adds one generator card in the `meta` category. Preset System Prompts are read-only and applied per subscene card.
 - Built-in category ids: `workplace`, `media`, `polish`, `study`, `ppt`, `code`, `job`, `analysis`, `life`, `legal`, `meta`. Existing user categories win over built-in label matching so their data and scene prompts are preserved; new names matching a built-in label still map to the built-in category to avoid duplicate chips.
-- Custom scenes can be created, renamed, deleted, and given a scene-level System Prompt; built-in categories are read-only. Generated-scene JSON uses `parseGeneratedScene` + `importGeneratedScene`; the user pastes the model JSON, confirms a structured preview, and the three storage keys are written atomically without overwriting existing scenes.
+- Custom scenes can be created, renamed, deleted, and given a scene-level System Prompt; built-in categories are read-only. Scene and card order can be changed only in the left library Reorder dialog (drag, visible move buttons, or Alt+Arrow on handles); the dialog also has an atomic Restore defaults action and a Cancel action that restores the order snapshot from dialog open. The blank-session scene dock reflects the saved order but has no drag or sort controls. Generated-scene JSON uses `parseGeneratedScene` + `importGeneratedScene`; the user pastes the model JSON, confirms a structured preview, and the three storage keys are written atomically without overwriting existing scenes.
 - Version the storage keys if the schema changes, and migrate existing data. Never silently drop user templates/categories.
 
 ### UI conventions

@@ -16,6 +16,10 @@ window.__ModuleLoader__.load({
     const SCENE_PROMPT_STORAGE_KEY = 'dsh.prompt-library.scene-prompts.v1'
     /** Browser-local storage key for the last scene selected per Session (UI hint only). */
     const SCENE_SELECTION_STORAGE_KEY = 'dsh.prompt-library.scene-selection.v1'
+    /** Browser-local storage key for the user's scene order. */
+    const SCENE_ORDER_STORAGE_KEY = 'dsh.prompt-library.scene-order.v1'
+    /** Browser-local storage key for the user's card order within each scene. */
+    const CARD_ORDER_STORAGE_KEY = 'dsh.prompt-library.card-order.v1'
     /** Maximum user-authored scene System Prompt length. */
     const SCENE_PROMPT_MAX = 6000
     const GENERATED_SCENE_NAME_MAX = 40
@@ -45,6 +49,27 @@ window.__ModuleLoader__.load({
       'action.duplicate': 'Save as mine',
       'action.manage': 'Manage library',
       'action.manageScenes': 'Manage scenes',
+      'action.reorder': 'Reorder',
+      'reorder.title': 'Reorder scenes and cards',
+      'reorder.hint': 'Reorder scenes or cards here. Changes apply immediately and sync to the scene prompt flow.',
+      'reorder.scenes': 'Scene order',
+      'reorder.cards': 'Card order',
+      'reorder.sceneHint': 'Drag, or press Alt+↑/↓ on a handle.',
+      'reorder.cardHint': 'Select a scene, then drag its cards or press Alt+↑/↓ on a handle.',
+      'reorder.dragScene': 'Drag to reorder scene',
+      'reorder.dragCard': 'Drag to reorder card',
+      'reorder.done': 'Done',
+      'reorder.moveUp': 'Move up',
+      'reorder.moveDown': 'Move down',
+      'reorder.sceneMoved': 'Scene order updated.',
+      'reorder.cardMoved': 'Card order updated.',
+      'reorder.reset': 'Restore defaults',
+      'reorder.resetConfirm': 'Restore the default order for all scenes and cards? This replaces the custom order in this browser.',
+      'reorder.resetApply': 'Restore',
+      'reorder.resetDone': 'Default order restored.',
+      'reorder.failed': 'Could not save the order. Check browser storage.',
+      'reorder.emptyCards': 'No cards in this scene.',
+      'reorder.emptyScenes': 'No scenes to reorder.',
       'action.importScene': 'Import generated scene',
       'action.useGenerator': 'Use generator',
       'generator.title': 'Prompt Flow Generator',
@@ -172,6 +197,27 @@ window.__ModuleLoader__.load({
       'action.duplicate': '另存为我的模板',
       'action.manage': '管理模板库',
       'action.manageScenes': '管理场景',
+      'action.reorder': '调整顺序',
+      'reorder.title': '调整场景与卡片顺序',
+      'reorder.hint': '在这里调整场景或卡片顺序。修改会立即保存，并同步到新会话的场景提示流。',
+      'reorder.scenes': '场景顺序',
+      'reorder.cards': '卡片顺序',
+      'reorder.sceneHint': '可拖动，也可在拖动手柄上按 Alt+↑/↓。',
+      'reorder.cardHint': '先选择一个场景，再拖动卡片，或在拖动手柄上按 Alt+↑/↓。',
+      'reorder.dragScene': '拖动调整场景顺序',
+      'reorder.dragCard': '拖动调整卡片顺序',
+      'reorder.done': '完成',
+      'reorder.moveUp': '上移',
+      'reorder.moveDown': '下移',
+      'reorder.sceneMoved': '场景顺序已更新。',
+      'reorder.cardMoved': '卡片顺序已更新。',
+      'reorder.reset': '恢复默认顺序',
+      'reorder.resetConfirm': '恢复所有场景和卡片的默认顺序？这会替换当前浏览器中的自定义顺序。',
+      'reorder.resetApply': '恢复',
+      'reorder.resetDone': '已恢复默认顺序。',
+      'reorder.failed': '顺序保存失败，请检查浏览器存储。',
+      'reorder.emptyCards': '这个场景还没有卡片。',
+      'reorder.emptyScenes': '没有可调整的场景。',
       'action.importScene': '导入生成场景',
       'action.useGenerator': '使用生成器',
       'generator.title': '提示流生成器',
@@ -1012,6 +1058,275 @@ window.__ModuleLoader__.load({
       }
     }
 
+
+    function normalizeSceneOrder(value) {
+      if (!Array.isArray(value)) return []
+      const seen = new Set()
+      const next = []
+      for (const raw of value) {
+        if (typeof raw !== 'string') continue
+        const key = sceneSelectionKey(raw)
+        if (key === '' || key === 'builtin:meta' || seen.has(key)) continue
+        seen.add(key)
+        next.push(key)
+      }
+      return next
+    }
+
+    function loadSceneOrder() {
+      try {
+        const raw = window.localStorage.getItem(SCENE_ORDER_STORAGE_KEY)
+        if (raw === null) return []
+        return normalizeSceneOrder(JSON.parse(raw))
+      } catch (error) {
+        console.error('prompt-library: could not read scene order', error)
+        return []
+      }
+    }
+
+    function persistSceneOrder(next) {
+      try {
+        window.localStorage.setItem(SCENE_ORDER_STORAGE_KEY, JSON.stringify(next))
+        return true
+      } catch (error) {
+        console.error('prompt-library: could not save scene order', error)
+        return false
+      }
+    }
+
+    let sceneOrder = loadSceneOrder()
+    const sceneOrderListeners = new Set()
+
+    function subscribeSceneOrder(listener) {
+      sceneOrderListeners.add(listener)
+      return () => {
+        sceneOrderListeners.delete(listener)
+      }
+    }
+
+    function getSceneOrderSnapshot() {
+      return sceneOrder
+    }
+
+    function setSceneOrder(next) {
+      const normalized = normalizeSceneOrder(next)
+      if (!persistSceneOrder(normalized)) return false
+      sceneOrder = normalized
+      for (const listener of [...sceneOrderListeners]) listener()
+      return true
+    }
+
+    function moveSceneOrder(fromKey, toKey, currentKeys, placement) {
+      if (!Array.isArray(currentKeys) || fromKey === toKey) return false
+      const fallback = []
+      const seen = new Set()
+      for (const raw of currentKeys) {
+        const key = sceneSelectionKey(raw)
+        if (key === '' || key === 'builtin:meta' || seen.has(key)) continue
+        seen.add(key)
+        fallback.push(key)
+      }
+      if (!fallback.includes(fromKey) || !fallback.includes(toKey)) return false
+      const base = sceneOrder.length > 0 ? sceneOrder.filter((key) => fallback.includes(key)) : []
+      for (const key of fallback) {
+        if (!base.includes(key)) base.push(key)
+      }
+      const from = base.indexOf(fromKey)
+      const to = base.indexOf(toKey)
+      if (from < 0 || to < 0 || from === to) return false
+      base.splice(from, 1)
+      const target = base.indexOf(toKey)
+      const insertAt = placement === 'after' ? target + 1 : target
+      base.splice(insertAt, 0, fromKey)
+      return setSceneOrder(base)
+    }
+
+    function renameSceneOrderKey(oldKey, newKey) {
+      const from = sceneSelectionKey(oldKey)
+      const to = sceneSelectionKey(newKey)
+      if (from === '' || to === '' || from === to) return false
+      const index = sceneOrder.indexOf(from)
+      if (index < 0) return true
+      const next = sceneOrder.slice()
+      next[index] = to
+      return setSceneOrder(next)
+    }
+
+    function removeSceneOrderKey(key) {
+      const target = sceneSelectionKey(key)
+      if (target === '') return true
+      const next = sceneOrder.filter((entry) => entry !== target)
+      if (next.length === sceneOrder.length) return true
+      return setSceneOrder(next)
+    }
+
+    function normalizeCardOrder(value) {
+      if (value === null || typeof value !== 'object' || Array.isArray(value)) return {}
+      const next = {}
+      for (const [rawKey, rawIds] of Object.entries(value)) {
+        const key = sceneSelectionKey(rawKey)
+        if (key === '' || key === 'builtin:meta' || !Array.isArray(rawIds)) continue
+        const seen = new Set()
+        const ids = []
+        for (const rawId of rawIds) {
+          if (typeof rawId !== 'string') continue
+          const id = rawId.trim()
+          if (id === '' || seen.has(id)) continue
+          seen.add(id)
+          ids.push(id)
+        }
+        next[key] = ids
+      }
+      return next
+    }
+
+    function loadCardOrder() {
+      try {
+        const raw = window.localStorage.getItem(CARD_ORDER_STORAGE_KEY)
+        if (raw === null) return {}
+        return normalizeCardOrder(JSON.parse(raw))
+      } catch (error) {
+        console.error('prompt-library: could not read card order', error)
+        return {}
+      }
+    }
+
+    function persistCardOrder(next) {
+      try {
+        window.localStorage.setItem(CARD_ORDER_STORAGE_KEY, JSON.stringify(next))
+        return true
+      } catch (error) {
+        console.error('prompt-library: could not save card order', error)
+        return false
+      }
+    }
+
+    let cardOrder = loadCardOrder()
+    const cardOrderListeners = new Set()
+
+    function subscribeCardOrder(listener) {
+      cardOrderListeners.add(listener)
+      return () => {
+        cardOrderListeners.delete(listener)
+      }
+    }
+
+    function getCardOrderSnapshot() {
+      return cardOrder
+    }
+
+    function setCardOrder(next) {
+      const normalized = normalizeCardOrder(next)
+      if (!persistCardOrder(normalized)) return false
+      cardOrder = normalized
+      for (const listener of [...cardOrderListeners]) listener()
+      return true
+    }
+
+    function moveCardOrder(categoryKey, fromId, toId, currentIds, placement) {
+      const key = sceneSelectionKey(categoryKey)
+      if (key === '' || fromId === toId || !Array.isArray(currentIds)) return false
+      const fallback = []
+      const seen = new Set()
+      for (const rawId of currentIds) {
+        if (typeof rawId !== 'string') continue
+        const id = rawId.trim()
+        if (id === '' || seen.has(id)) continue
+        seen.add(id)
+        fallback.push(id)
+      }
+      if (!fallback.includes(fromId) || !fallback.includes(toId)) return false
+      const stored = Array.isArray(cardOrder[key]) ? cardOrder[key].filter((id) => fallback.includes(id)) : []
+      for (const id of fallback) {
+        if (!stored.includes(id)) stored.push(id)
+      }
+      const from = stored.indexOf(fromId)
+      const to = stored.indexOf(toId)
+      if (from < 0 || to < 0 || from === to) return false
+      stored.splice(from, 1)
+      const target = stored.indexOf(toId)
+      const insertAt = placement === 'after' ? target + 1 : target
+      stored.splice(insertAt, 0, fromId)
+      return setCardOrder({ ...cardOrder, [key]: stored })
+    }
+
+    function removeCardOrderCategory(categoryKey) {
+      const key = sceneSelectionKey(categoryKey)
+      if (key === '' || cardOrder[key] === undefined) return true
+      const next = { ...cardOrder }
+      delete next[key]
+      return setCardOrder(next)
+    }
+
+    function renameCardOrderCategory(oldKey, newKey) {
+      const from = sceneSelectionKey(oldKey)
+      const to = sceneSelectionKey(newKey)
+      if (from === '' || to === '' || from === to) return false
+      if (cardOrder[from] === undefined) return true
+      const next = { ...cardOrder }
+      next[to] = next[from]
+      delete next[from]
+      return setCardOrder(next)
+    }
+
+    function applyAllOrder(nextSceneOrder, nextCardOrder) {
+      const normalizedScene = normalizeSceneOrder(nextSceneOrder)
+      const normalizedCards = normalizeCardOrder(nextCardOrder)
+      let sceneBackup = null
+      let cardBackup = null
+      try {
+        sceneBackup = window.localStorage.getItem(SCENE_ORDER_STORAGE_KEY)
+        cardBackup = window.localStorage.getItem(CARD_ORDER_STORAGE_KEY)
+        window.localStorage.setItem(SCENE_ORDER_STORAGE_KEY, JSON.stringify(normalizedScene))
+        window.localStorage.setItem(CARD_ORDER_STORAGE_KEY, JSON.stringify(normalizedCards))
+      } catch (error) {
+        console.error('prompt-library: could not write order snapshot', error)
+        try {
+          if (sceneBackup === null) window.localStorage.removeItem(SCENE_ORDER_STORAGE_KEY)
+          else window.localStorage.setItem(SCENE_ORDER_STORAGE_KEY, sceneBackup)
+          if (cardBackup === null) window.localStorage.removeItem(CARD_ORDER_STORAGE_KEY)
+          else window.localStorage.setItem(CARD_ORDER_STORAGE_KEY, cardBackup)
+        } catch (restoreError) {
+          console.error('prompt-library: could not restore order after failed write', restoreError)
+        }
+        return false
+      }
+      sceneOrder = normalizedScene
+      cardOrder = normalizedCards
+      for (const listener of [...sceneOrderListeners]) listener()
+      for (const listener of [...cardOrderListeners]) listener()
+      return true
+    }
+
+    function resetAllOrder() {
+      return applyAllOrder([], {})
+    }
+
+    function restoreAllOrder(nextSceneOrder, nextCardOrder) {
+      return applyAllOrder(nextSceneOrder, nextCardOrder)
+    }
+
+    function removeCardFromOrder(id) {
+      if (typeof id !== 'string' || id === '') return true
+      let changed = false
+      const next = {}
+      for (const [key, ids] of Object.entries(cardOrder)) {
+        const filtered = ids.filter((entry) => entry !== id)
+        if (filtered.length !== ids.length) changed = true
+        next[key] = filtered
+      }
+      if (!changed) return true
+      return setCardOrder(next)
+    }
+
+    function appendCardToOrder(categoryKey, id) {
+      const key = sceneSelectionKey(categoryKey)
+      if (key === '' || typeof id !== 'string' || id === '') return true
+      const ids = cardOrder[key]
+      if (!Array.isArray(ids) || ids.includes(id)) return true
+      return setCardOrder({ ...cardOrder, [key]: [...ids, id] })
+    }
+
     /** Canonical key for a user scene's custom System Prompt. */
     function scenePromptKey(sceneKey) {
       if (typeof sceneKey !== 'string') return ''
@@ -1262,6 +1577,7 @@ window.__ModuleLoader__.load({
       userTemplates = nextTemplates
       userCategories = nextCategories
       userScenePrompts = nextScenePrompts
+      if (updated) removeCardOrderCategory(`user:${sceneName}`)
       for (const listener of [...templateListeners]) listener()
       for (const listener of [...categoryListeners]) listener()
       for (const listener of [...scenePromptListeners]) listener()
@@ -1389,7 +1705,7 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function createTemplate(input) {
+    function createTemplate(input, t) {
       const template = {
         id: newId(),
         title: input.title,
@@ -1399,9 +1715,10 @@ window.__ModuleLoader__.load({
         order: nextTemplateOrder(input.category),
       }
       setUserTemplates([template, ...userTemplates])
+      if (t !== undefined) appendCardToOrder(resolveUserCategory(template.category, t).key, template.id)
     }
 
-    function updateTemplate(id, patch) {
+    function updateTemplate(id, patch, t) {
       const existing = userTemplates.find((template) => template.id === id)
       if (existing === undefined) return
       const nextCategory = typeof patch.category === 'string' ? patch.category : existing.category
@@ -1414,10 +1731,15 @@ window.__ModuleLoader__.load({
             : template,
         ),
       )
+      if (categoryChanged) {
+        removeCardFromOrder(id)
+        if (t !== undefined) appendCardToOrder(resolveUserCategory(nextCategory, t).key, id)
+      }
     }
 
     function deleteTemplate(id) {
       setUserTemplates(userTemplates.filter((template) => template.id !== id))
+      removeCardFromOrder(id)
     }
 
     function builtinCategoryForLabel(label, t) {
@@ -1500,7 +1822,13 @@ window.__ModuleLoader__.load({
           const rightOrder = typeof right.order === 'number' ? right.order : 0
           return leftOrder - rightOrder || left.updatedAt - right.updatedAt
         })
-      return [...builtins, ...mine]
+      const fallback = [...builtins, ...mine]
+      const ids = cardOrder[categoryKey]
+      if (!Array.isArray(ids) || ids.length === 0) return fallback
+      const positions = new Map(ids.map((id, index) => [id, index]))
+      const ordered = fallback.filter((item) => positions.has(item.id)).sort((left, right) => positions.get(left.id) - positions.get(right.id))
+      const rest = fallback.filter((item) => !positions.has(item.id))
+      return [...ordered, ...rest]
     }
 
     function filterItems(items, query, categoryKey) {
@@ -1528,12 +1856,22 @@ window.__ModuleLoader__.load({
         if (!seen.has(key)) seen.set(key, name)
       }
       const builtinOrder = new Map(BUILTIN_CATEGORY_IDS.map((id, index) => [`builtin:${id}`, index]))
+      const customOrder = new Map(sceneOrder.map((key, index) => [key, index]))
+      const defaultOrder = (entry) => {
+        const index = builtinOrder.get(entry.key)
+        return index === undefined ? Number.MAX_SAFE_INTEGER : index
+      }
       return [...seen]
         .map(([key, label]) => ({ key, label }))
         .sort((left, right) => {
-          const leftOrder = builtinOrder.has(left.key) ? builtinOrder.get(left.key) : Number.MAX_SAFE_INTEGER
-          const rightOrder = builtinOrder.has(right.key) ? builtinOrder.get(right.key) : Number.MAX_SAFE_INTEGER
-          return leftOrder - rightOrder || left.label.localeCompare(right.label)
+          const leftCustom = customOrder.get(left.key)
+          const rightCustom = customOrder.get(right.key)
+          if (leftCustom !== undefined || rightCustom !== undefined) {
+            if (leftCustom === undefined) return 1
+            if (rightCustom === undefined) return -1
+            if (leftCustom !== rightCustom) return leftCustom - rightCustom
+          }
+          return defaultOrder(left) - defaultOrder(right) || left.label.localeCompare(right.label)
         })
     }
 
@@ -1821,6 +2159,35 @@ window.__ModuleLoader__.load({
 .dsh-pl-scene-edit input:focus{outline:none;border-color:var(--dsw-alias-brand-primary)}
 .dsh-pl-scene-confirm{color:var(--dsw-alias-label-secondary);font-size:11.5px;line-height:16px}
 .dsh-pl-scene-manager-empty{margin:0;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:18px}
+
+.dsh-pl-reorder-dialog{width:min(820px,calc(100vw - 48px))}
+.dsh-pl-reorder-columns{display:grid;grid-template-columns:minmax(220px,.9fr) minmax(280px,1.1fr);gap:16px;min-height:320px}
+.dsh-pl-reorder-col{display:flex;flex-direction:column;gap:6px;min-width:0}
+.dsh-pl-reorder-col h3{margin:0;font-size:13px;font-weight:600;line-height:20px}
+.dsh-pl-reorder-list{display:flex;flex-direction:column;gap:6px;max-height:52vh;overflow:auto;padding:1px;border:1px solid var(--dsw-alias-border-l1);border-radius:10px;background:var(--dsw-alias-bg-base)}
+.dsh-pl-reorder-row{display:flex;align-items:center;gap:4px;padding:3px 5px;border:1px solid transparent;border-radius:8px;background:var(--dsw-alias-bg-layer-1)}
+.dsh-pl-reorder-row[data-dragging="true"]{opacity:.55}
+.dsh-pl-reorder-row[data-drag-over="true"]{border-color:var(--dsw-alias-brand-primary);background:var(--dsw-alias-bg-layer-2)}
+.dsh-pl-reorder-handle{appearance:none;flex:none;width:24px;height:28px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:13px;line-height:1;cursor:grab;display:inline-flex;align-items:center;justify-content:center}
+.dsh-pl-reorder-handle:hover{background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary)}
+.dsh-pl-reorder-handle:active{cursor:grabbing}
+.dsh-pl-reorder-handle:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}
+.dsh-pl-reorder-move{appearance:none;flex:none;width:22px;height:26px;padding:0;border:1px solid var(--dsw-alias-border-l1);border-radius:6px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-secondary);font:inherit;font-size:11px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.dsh-pl-reorder-move:hover{background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary)}
+.dsh-pl-reorder-move:disabled{opacity:.35;cursor:default}
+.dsh-pl-reorder-move:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}
+.dsh-pl-reorder-reset{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border:1px solid var(--dsw-alias-border-l1);border-radius:8px;background:var(--dsw-alias-bg-layer-1)}
+.dsh-pl-reorder-reset p{margin:0;color:var(--dsw-alias-label-secondary);font-size:11.5px;line-height:18px}
+.dsh-pl-reorder-select{appearance:none;flex:1;min-width:0;padding:4px 6px;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-primary);font:inherit;text-align:left;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.dsh-pl-reorder-select:hover{background:var(--dsw-alias-bg-layer-2)}
+.dsh-pl-reorder-select[data-active="true"]{background:var(--dsw-alias-bg-layer-2)}
+.dsh-pl-reorder-select:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}
+.dsh-pl-reorder-name{font-size:12.5px;line-height:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dsh-pl-reorder-meta{flex:none;color:var(--dsw-alias-label-secondary);font-size:10.5px;line-height:16px;white-space:nowrap}
+.dsh-pl-reorder-card-main{min-width:0;flex:1;display:flex;align-items:center;gap:6px;padding:4px 6px}
+.dsh-pl-reorder-card-title{min-width:0;font-size:12.5px;line-height:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dsh-pl-reorder-empty{margin:0;padding:12px;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:18px;text-align:center}
+@media (max-width:640px){.dsh-pl-reorder-dialog{width:calc(100vw - 32px)}.dsh-pl-reorder-columns{grid-template-columns:1fr;max-height:60vh;overflow:auto}}
 @media (max-width:640px){.dsh-pl-grid{grid-template-columns:1fr}.dsh-pl-generator{flex-direction:column;align-items:stretch}.dsh-pl-generator-actions{justify-content:flex-end}.dsh-pl-toolbar-main{align-items:stretch}.dsh-pl-search{flex-basis:100%}.dsh-pl-toolbar-actions{width:100%;justify-content:flex-end}.dsh-pl-count{margin-left:0;text-align:right}.dsh-pl-heading-actions{width:100%;justify-content:flex-end}.dsh-pl-scene-row{flex-wrap:wrap}.dsh-pl-scene-row-actions{width:100%;justify-content:flex-end}}
 @media (prefers-reduced-motion:reduce){.dsh-pl-page *{transition:none!important}}
 `
@@ -2539,6 +2906,416 @@ window.__ModuleLoader__.load({
       )
     }
 
+    function ReorderDialog({ t, scenes, items, onMoveScene, onMoveCard, onClose }) {
+      const dialogRef = React.useRef(null)
+      const closeRef = React.useRef(null)
+      const [selectedKey, setSelectedKey] = React.useState(() => (scenes.length > 0 ? scenes[0].key : ''))
+      const [error, setError] = React.useState(null)
+      const [dragScene, setDragScene] = React.useState(null)
+      const [dragSceneOver, setDragSceneOver] = React.useState(null)
+      const [dragCard, setDragCard] = React.useState(null)
+      const [dragCardOver, setDragCardOver] = React.useState(null)
+      const [status, setStatus] = React.useState('')
+      const [resetConfirm, setResetConfirm] = React.useState(false)
+      const initialSceneOrderRef = React.useRef(Array.from(getSceneOrderSnapshot()))
+      const initialCardOrderRef = React.useRef(JSON.parse(JSON.stringify(getCardOrderSnapshot())))
+      React.useSyncExternalStore(subscribeSceneOrder, getSceneOrderSnapshot)
+      React.useSyncExternalStore(subscribeCardOrder, getCardOrderSnapshot)
+
+      React.useEffect(() => {
+        const previous = document.activeElement
+        if (closeRef.current !== null) closeRef.current.focus()
+        return () => {
+          if (previous !== null && typeof previous.focus === 'function') previous.focus()
+        }
+      }, [])
+
+      React.useEffect(() => {
+        if (scenes.length === 0) {
+          if (selectedKey !== '') setSelectedKey('')
+          return
+        }
+        if (!scenes.some((scene) => scene.key === selectedKey)) setSelectedKey(scenes[0].key)
+      }, [scenes, selectedKey])
+
+      const selected = scenes.find((scene) => scene.key === selectedKey)
+      const cards = selected === undefined ? [] : sceneCardsFor(items, selected.key)
+
+      const report = (ok, successKey) => {
+        setError(ok ? null : t('reorder.failed'))
+        setStatus(ok ? t(successKey) : '')
+      }
+
+      const placementAt = (event) => {
+        const row = event.currentTarget
+        const rect = row !== null && typeof row.getBoundingClientRect === 'function' ? row.getBoundingClientRect() : null
+        return rect !== null && event.clientY < rect.top + rect.height / 2 ? 'before' : 'after'
+      }
+
+      const beginSceneDrag = (event, key) => {
+        setError(null)
+        setDragScene(key)
+        setDragSceneOver(null)
+        if (event.dataTransfer) {
+          event.dataTransfer.effectAllowed = 'move'
+          try {
+            event.dataTransfer.setData('text/plain', key)
+          } catch (_unavailable) {
+            /* state carries the source key */
+          }
+        }
+      }
+
+      const beginCardDrag = (event, id) => {
+        setError(null)
+        setDragCard(id)
+        setDragCardOver(null)
+        if (event.dataTransfer) {
+          event.dataTransfer.effectAllowed = 'move'
+          try {
+            event.dataTransfer.setData('text/plain', id)
+          } catch (_unavailable) {
+            /* state carries the source id */
+          }
+        }
+      }
+
+      const overScene = (event, key) => {
+        if (dragScene === null) return
+        event.preventDefault()
+        if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
+        if (dragSceneOver !== key) setDragSceneOver(key)
+      }
+
+      const dropScene = (event, key) => {
+        event.preventDefault()
+        const from = dragScene
+        setDragScene(null)
+        setDragSceneOver(null)
+        if (from === null || from === key) return
+        report(onMoveScene(from, key, placementAt(event)), 'reorder.sceneMoved')
+      }
+
+      const overCard = (event, id) => {
+        if (dragCard === null) return
+        event.preventDefault()
+        if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
+        if (dragCardOver !== id) setDragCardOver(id)
+      }
+
+      const dropCard = (event, id) => {
+        event.preventDefault()
+        const from = dragCard
+        setDragCard(null)
+        setDragCardOver(null)
+        if (from === null || from === id || selected === undefined) return
+        report(onMoveCard(selected.key, from, id, placementAt(event)), 'reorder.cardMoved')
+      }
+
+      const moveSceneByKeyboard = (event, key) => {
+        if (!event.altKey || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return
+        event.preventDefault()
+        const index = scenes.findIndex((scene) => scene.key === key)
+        const target = scenes[index + (event.key === 'ArrowUp' ? -1 : 1)]
+        if (index < 0 || target === undefined) return
+        report(onMoveScene(key, target.key, event.key === 'ArrowUp' ? 'before' : 'after'), 'reorder.sceneMoved')
+      }
+
+      const moveCardByKeyboard = (event, id) => {
+        if (!event.altKey || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return
+        event.preventDefault()
+        const index = cards.findIndex((item) => item.id === id)
+        const target = cards[index + (event.key === 'ArrowUp' ? -1 : 1)]
+        if (index < 0 || target === undefined || selected === undefined) return
+        report(onMoveCard(selected.key, id, target.id, event.key === 'ArrowUp' ? 'before' : 'after'), 'reorder.cardMoved')
+      }
+
+      const moveSceneByStep = (key, delta) => {
+        const index = scenes.findIndex((scene) => scene.key === key)
+        const target = scenes[index + delta]
+        if (index < 0 || target === undefined) return
+        report(onMoveScene(key, target.key, delta < 0 ? 'before' : 'after'), 'reorder.sceneMoved')
+      }
+
+      const moveCardByStep = (id, delta) => {
+        if (selected === undefined) return
+        const index = cards.findIndex((item) => item.id === id)
+        const target = cards[index + delta]
+        if (index < 0 || target === undefined) return
+        report(onMoveCard(selected.key, id, target.id, delta < 0 ? 'before' : 'after'), 'reorder.cardMoved')
+      }
+
+      const resetOrder = () => {
+        if (!resetAllOrder()) {
+          setError(t('reorder.failed'))
+          setStatus('')
+          return
+        }
+        setError(null)
+        setStatus(t('reorder.resetDone'))
+        setResetConfirm(false)
+      }
+
+      const cancel = () => {
+        if (!restoreAllOrder(initialSceneOrderRef.current, initialCardOrderRef.current)) {
+          setError(t('reorder.failed'))
+          setStatus('')
+          return
+        }
+        onClose()
+      }
+
+      const onKeyDown = (event) => {
+        if (event.nativeEvent && event.nativeEvent.isComposing) return
+        if (event.key === 'Escape') {
+          event.preventDefault()
+          event.stopPropagation()
+          cancel()
+          return
+        }
+        if (event.key !== 'Tab') return
+        const dialog = dialogRef.current
+        if (dialog === null) return
+        const nodes = dialog.querySelectorAll('button, input, textarea, [href], [tabindex]:not([tabindex="-1"])')
+        const focusable = [...nodes].filter((node) => !node.disabled && node.offsetParent !== null)
+        if (focusable.length === 0) return
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault()
+          last.focus()
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault()
+          first.focus()
+        }
+      }
+
+      return h(
+        'div',
+        {
+          className: 'dsh-pl-backdrop',
+          onMouseDown: (event) => {
+            if (event.target === event.currentTarget) cancel()
+          },
+        },
+        h(
+          'div',
+          {
+            ref: dialogRef,
+            className: 'dsh-pl-dialog dsh-pl-reorder-dialog',
+            role: 'dialog',
+            'aria-modal': 'true',
+            'aria-labelledby': 'dsh-pl-reorder-title',
+            'aria-describedby': 'dsh-pl-reorder-hint',
+            onKeyDown,
+          },
+          h('h2', { id: 'dsh-pl-reorder-title', className: 'dsh-pl-dialog-title' }, t('reorder.title')),
+          h('p', { id: 'dsh-pl-reorder-hint', className: 'dsh-pl-hint' }, t('reorder.hint')),
+          h(
+            'div',
+            { className: 'dsh-pl-reorder-columns' },
+            h(
+              'section',
+              { className: 'dsh-pl-reorder-col', 'aria-label': t('reorder.scenes') },
+              h('h3', null, t('reorder.scenes')),
+              h('p', { className: 'dsh-pl-hint' }, t('reorder.sceneHint')),
+              h(
+                'div',
+                { className: 'dsh-pl-reorder-list', role: 'list' },
+                scenes.length === 0
+                  ? h('p', { className: 'dsh-pl-reorder-empty' }, t('reorder.emptyScenes'))
+                  : scenes.map((scene, sceneIndex) =>
+                      h(
+                        'div',
+                        {
+                          key: scene.key,
+                          className: 'dsh-pl-reorder-row',
+                          role: 'listitem',
+                          'data-dragging': dragScene === scene.key ? 'true' : 'false',
+                          'data-drag-over': dragSceneOver === scene.key ? 'true' : 'false',
+                          onDragOver: (event) => overScene(event, scene.key),
+                          onDrop: (event) => dropScene(event, scene.key),
+                        },
+                        h(
+                          'button',
+                          {
+                            type: 'button',
+                            className: 'dsh-pl-reorder-handle',
+                            draggable: 'true',
+                            title: t('reorder.dragScene'),
+                            'aria-label': `${t('reorder.dragScene')}: ${scene.label}`,
+                            onDragStart: (event) => beginSceneDrag(event, scene.key),
+                            onDragEnd: () => {
+                              setDragScene(null)
+                              setDragSceneOver(null)
+                            },
+                            onKeyDown: (event) => moveSceneByKeyboard(event, scene.key),
+                          },
+                          h('span', { 'aria-hidden': 'true' }, '⋮⋮'),
+                        ),
+                        h(
+                          'button',
+                          {
+                            type: 'button',
+                            className: 'dsh-pl-reorder-select',
+                            'data-active': selectedKey === scene.key ? 'true' : 'false',
+                            'aria-pressed': selectedKey === scene.key,
+                            onClick: () => setSelectedKey(scene.key),
+                          },
+                          h('span', { className: 'dsh-pl-reorder-name' }, scene.label),
+                          h('span', { className: 'dsh-pl-reorder-meta' }, t('scenes.count', { count: scene.count })),
+                        ),
+                        h(
+                          'button',
+                          {
+                            type: 'button',
+                            className: 'dsh-pl-reorder-move',
+                            disabled: sceneIndex === 0,
+                            title: t('reorder.moveUp'),
+                            'aria-label': `${t('reorder.moveUp')}: ${scene.label}`,
+                            onClick: () => moveSceneByStep(scene.key, -1),
+                          },
+                          '↑',
+                        ),
+                        h(
+                          'button',
+                          {
+                            type: 'button',
+                            className: 'dsh-pl-reorder-move',
+                            disabled: sceneIndex === scenes.length - 1,
+                            title: t('reorder.moveDown'),
+                            'aria-label': `${t('reorder.moveDown')}: ${scene.label}`,
+                            onClick: () => moveSceneByStep(scene.key, 1),
+                          },
+                          '↓',
+                        ),
+                      ),
+                    ),
+              ),
+            ),
+            h(
+              'section',
+              { className: 'dsh-pl-reorder-col', 'aria-label': t('reorder.cards') },
+              h('h3', null, t('reorder.cards')),
+              h('p', { className: 'dsh-pl-hint' }, t('reorder.cardHint')),
+              selected === undefined
+                ? h('p', { className: 'dsh-pl-reorder-empty' }, t('reorder.emptyScenes'))
+                : h(
+                    'div',
+                    { className: 'dsh-pl-reorder-list', role: 'list' },
+                    cards.length === 0
+                      ? h('p', { className: 'dsh-pl-reorder-empty' }, t('reorder.emptyCards'))
+                      : cards.map((item, cardIndex) =>
+                          h(
+                            'div',
+                            {
+                              key: item.id,
+                              className: 'dsh-pl-reorder-row',
+                              role: 'listitem',
+                              'data-dragging': dragCard === item.id ? 'true' : 'false',
+                              'data-drag-over': dragCardOver === item.id ? 'true' : 'false',
+                              onDragOver: (event) => overCard(event, item.id),
+                              onDrop: (event) => dropCard(event, item.id),
+                            },
+                            h(
+                              'button',
+                              {
+                                type: 'button',
+                                className: 'dsh-pl-reorder-handle',
+                                draggable: 'true',
+                                title: t('reorder.dragCard'),
+                                'aria-label': `${t('reorder.dragCard')}: ${item.title}`,
+                                onDragStart: (event) => beginCardDrag(event, item.id),
+                                onDragEnd: () => {
+                                  setDragCard(null)
+                                  setDragCardOver(null)
+                                },
+                                onKeyDown: (event) => moveCardByKeyboard(event, item.id),
+                              },
+                              h('span', { 'aria-hidden': 'true' }, '⋮⋮'),
+                            ),
+                            h(
+                              'span',
+                              { className: 'dsh-pl-reorder-card-main' },
+                              h('span', { className: 'dsh-pl-reorder-card-title' }, item.title),
+                              h(
+                                'span',
+                                { className: 'dsh-pl-badge' },
+                                item.builtin ? t('badge.builtin') : t('badge.mine'),
+                              ),
+                            ),
+                            h(
+                              'button',
+                              {
+                                type: 'button',
+                                className: 'dsh-pl-reorder-move',
+                                disabled: cardIndex === 0,
+                                title: t('reorder.moveUp'),
+                                'aria-label': `${t('reorder.moveUp')}: ${item.title}`,
+                                onClick: () => moveCardByStep(item.id, -1),
+                              },
+                              '↑',
+                            ),
+                            h(
+                              'button',
+                              {
+                                type: 'button',
+                                className: 'dsh-pl-reorder-move',
+                                disabled: cardIndex === cards.length - 1,
+                                title: t('reorder.moveDown'),
+                                'aria-label': `${t('reorder.moveDown')}: ${item.title}`,
+                                onClick: () => moveCardByStep(item.id, 1),
+                              },
+                              '↓',
+                            ),
+                          ),
+                        ),
+                  ),
+            ),
+          ),
+          error ? h('p', { className: 'dsh-pl-form-error', role: 'alert' }, error) : null,
+          status ? h('p', { className: 'dsh-pl-hint', role: 'status', 'aria-live': 'polite' }, status) : null,
+          resetConfirm
+            ? h(
+                'div',
+                { className: 'dsh-pl-reorder-reset' },
+                h('p', null, t('reorder.resetConfirm')),
+                h(
+                  'div',
+                  { className: 'dsh-pl-dialog-actions' },
+                  h('button', { type: 'button', className: 'dsh-pl-btn dsh-pl-btn-sm', onClick: () => setResetConfirm(false) }, t('action.cancel')),
+                  h('button', { type: 'button', className: 'dsh-pl-btn dsh-pl-btn-sm dsh-pl-btn-primary', onClick: resetOrder }, t('reorder.resetApply')),
+                ),
+              )
+            : null,
+          h(
+            'div',
+            { className: 'dsh-pl-dialog-foot' },
+            h('span', { className: 'dsh-pl-hint' }),
+            h(
+              'div',
+              { className: 'dsh-pl-dialog-actions' },
+              h('button', { type: 'button', className: 'dsh-pl-btn', onClick: cancel }, t('action.cancel')),
+              h(
+                'button',
+                {
+                  type: 'button',
+                  className: 'dsh-pl-btn dsh-pl-btn-sm',
+                  onClick: () => {
+                    setResetConfirm(true)
+                    setError(null)
+                    setStatus('')
+                  },
+                },
+                t('reorder.reset'),
+              ),
+              h('button', { type: 'button', ref: closeRef, className: 'dsh-pl-btn', onClick: onClose }, t('reorder.done')),
+            ),
+          ),
+        ),
+      )
+    }
+
     function ImportSceneDialog({ t, onImport, onClose }) {
       const dialogRef = React.useRef(null)
       const textRef = React.useRef(null)
@@ -2753,6 +3530,7 @@ window.__ModuleLoader__.load({
     function PromptLibraryPage({ t, useSessions, onUse, onBack, onScenePromptChange }) {
       const templates = React.useSyncExternalStore(subscribeTemplates, getTemplatesSnapshot)
       const categoryStore = React.useSyncExternalStore(subscribeCategories, getCategoriesSnapshot)
+      React.useSyncExternalStore(subscribeSceneOrder, getSceneOrderSnapshot)
       React.useSyncExternalStore(subscribeScenePrompts, getScenePromptsSnapshot)
       const activeSessionId = useSessions((state) => {
         const byId = state && state.byId
@@ -2785,6 +3563,7 @@ window.__ModuleLoader__.load({
       const [notice, setNotice] = React.useState(null)
       const [categoryEditor, setCategoryEditor] = React.useState(null)
       const [sceneManagerOpen, setSceneManagerOpen] = React.useState(false)
+      const [reorderOpen, setReorderOpen] = React.useState(false)
       const [importSceneOpen, setImportSceneOpen] = React.useState(false)
 
       React.useEffect(() => {
@@ -2932,6 +3711,14 @@ window.__ModuleLoader__.load({
         setSceneManagerOpen(true)
       }
 
+      const moveSceneInOrder = (fromKey, toKey, placement) => {
+        return moveSceneOrder(fromKey, toKey, sceneRows.map((scene) => scene.key), placement)
+      }
+
+      const moveCardInOrder = (categoryKey, fromId, toId, placement) => {
+        return moveCardOrder(categoryKey, fromId, toId, sceneCardsFor(items, categoryKey).map((item) => item.id), placement)
+      }
+
       const useGenerator = (item) => {
         if (activeSessionId === undefined || typeof onScenePromptChange !== 'function') {
           setNotice({ text: t('scenes.generatorNeedsSession'), tone: 'error', key: Date.now() })
@@ -2994,6 +3781,8 @@ window.__ModuleLoader__.load({
         )
         moveUserScenePrompt(key, nextSceneKey)
         renameSceneSelection(key, nextSceneKey)
+        renameSceneOrderKey(key, nextSceneKey)
+        renameCardOrderCategory(key, nextSceneKey)
         if (category === key) setCategory(nextSceneKey)
         if (wasActive) syncActiveScenePrompt(nextSceneKey, scenePromptFor(nextSceneKey, t))
         setNotice({ text: t('notice.sceneRenamed'), tone: 'ok', key: Date.now() })
@@ -3014,6 +3803,8 @@ window.__ModuleLoader__.load({
         )
         removeUserScenePrompt(key)
         removeSceneSelectionByKey(key)
+        removeSceneOrderKey(key)
+        removeCardOrderCategory(key)
         if (category === key) setCategory('all')
         if (wasActive) clearActiveScenePrompt(key)
         setNotice({ text: t('notice.sceneDeleted'), tone: 'ok', key: Date.now() })
@@ -3039,9 +3830,9 @@ window.__ModuleLoader__.load({
           }
         }
         if (editor.mode === 'edit' && editor.id) {
-          updateTemplate(editor.id, { title, body, category: nextCategory })
+          updateTemplate(editor.id, { title, body, category: nextCategory }, t)
         } else {
-          createTemplate({ title, body, category: nextCategory })
+          createTemplate({ title, body, category: nextCategory }, t)
         }
         setEditor(null)
         setConfirmId(null)
@@ -3260,6 +4051,18 @@ window.__ModuleLoader__.load({
                       type: 'button',
                       className: 'dsh-pl-btn dsh-pl-btn-sm',
                       'aria-haspopup': 'dialog',
+                      'aria-label': t('action.reorder'),
+                      title: t('action.reorder'),
+                      onClick: () => setReorderOpen(true),
+                    },
+                    t('action.reorder'),
+                  ),
+                  h(
+                    'button',
+                    {
+                      type: 'button',
+                      className: 'dsh-pl-btn dsh-pl-btn-sm',
+                      'aria-haspopup': 'dialog',
                       'aria-label': t('action.manageScenes'),
                       title: t('action.manageScenes'),
                       onClick: openSceneManager,
@@ -3342,6 +4145,16 @@ window.__ModuleLoader__.load({
               onClose: () => setCategoryEditor(null),
             })
           : null,
+        reorderOpen
+          ? h(ReorderDialog, {
+              t,
+              scenes: sceneRows,
+              items,
+              onMoveScene: moveSceneInOrder,
+              onMoveCard: moveCardInOrder,
+              onClose: () => setReorderOpen(false),
+            })
+          : null,
         sceneManagerOpen
           ? h(SceneManagerDialog, {
               t,
@@ -3384,6 +4197,8 @@ window.__ModuleLoader__.load({
       const blank = useSession((snapshot) => snapshot !== undefined && snapshot.blank === true)
       React.useSyncExternalStore(subscribeTemplates, getTemplatesSnapshot)
       const categoryStore = React.useSyncExternalStore(subscribeCategories, getCategoriesSnapshot)
+      React.useSyncExternalStore(subscribeSceneOrder, getSceneOrderSnapshot)
+      React.useSyncExternalStore(subscribeCardOrder, getCardOrderSnapshot)
       React.useSyncExternalStore(subscribeScenePrompts, getScenePromptsSnapshot)
       const [activeKey, setActiveKey] = React.useState(() => getSceneSelection(sessionId) || '')
       const [notice, setNotice] = React.useState(null)
@@ -4112,9 +4927,28 @@ window.__ModuleLoader__.load({
         renameSceneSelection,
         removeSceneSelectionByKey,
         buildItems,
+        categoriesOf,
         sceneCardsFor,
+        normalizeSceneOrder,
+        getSceneOrderSnapshot,
+        setSceneOrder,
+        moveSceneOrder,
+        renameSceneOrderKey,
+        removeSceneOrderKey,
+        normalizeCardOrder,
+        getCardOrderSnapshot,
+        setCardOrder,
+        moveCardOrder,
+        renameCardOrderCategory,
+        removeCardOrderCategory,
+        resetAllOrder,
+        restoreAllOrder,
+        createTemplate,
+        updateTemplate,
+        deleteTemplate,
         ScenePromptDock,
         SceneManagerDialog,
+        ReorderDialog,
         ImportSceneDialog,
         PromptLibraryPage,
       }
