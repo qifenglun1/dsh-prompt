@@ -1,20 +1,23 @@
-# Prompt Library for DeepSeek Harness
+# 场景提示流 for DeepSeek Harness
 
 [English](README.md) | 中文
 
-一个 DeepSeek Harness Web 插件：把可复用的提示词模板放到侧边栏和输入框旁边。选择模板后会插入到当前光标处；没有打开的对话时，会新建对话并把模板填入草稿。
+场景提示流是一个 DeepSeek Harness Web 插件：把可复用的提示词模板放到侧边栏、输入框旁边，并在空白新会话的输入框上方提供“场景提示流”。插件内置 9 个工作分类、50 个预置子场景，以及 1 个单卡片“提示流生成器”元场景。每个工作子场景都有独立的简体中文 System Prompt。选择模板后会插入到当前光标处；没有打开的对话时，会新建对话并把模板填入草稿。
 
-仓库地址：<https://github.com/qifenglun1/dsh-plugin-prompt>
+仓库地址：<https://github.com/qifenglun1/dsh-prompt>
 
 ## 功能
 
 - **侧边栏模板库**：左侧边栏的书签入口打开完整模板库面板。
 - **输入框快速选择**：输入框工具栏的书签按钮打开紧凑选择器，可直接搜索并插入。
+- **场景提示流**：在空白新会话的输入框上方显示 9 个工作分类胶囊。默认不选中任何分类，也不显示提示词卡片；点击分类后，该分类下的 5 个子场景卡片保持在同一行显示且不显示滚动条；超过 5 张卡片时才显示横向滚动条，并在最右侧露出下一张卡片的模糊/半透明一角，提示后面还有卡片；窄屏时 5 张卡片会收缩而不是换行。再次点击已选中的胶囊可取消选择并隐藏卡片。点击子场景卡片会应用其专属 System Prompt，并把起始提示词插入光标处。提示流生成器固定在左侧模板库顶部的独立入口条中。
+- **按子场景配置 System Prompt**：50 个工作预置子场景各自带有一段固定的专属 System Prompt；生成器元场景也有独立的生成用 Prompt；自定义场景可以追加自己的额外指令。只选择工作分类时不追加；点击子场景卡片时应用其 Prompt；取消分类时清除。预置 Prompt 只读，不会替换或覆盖 Harness 上层系统指令。
 - **光标处插入**：插入到当前草稿的光标处；有选区时替换选区。可通过输入框正常的撤销历史撤销。
 - **无对话时自动新建**：没有打开的对话时，选择模板会新建对话并填入草稿。
-- **模板管理**：新建、编辑、删除、另存为、复制、搜索，并按分类筛选。
-- **分类**：可以先建分类再建模板。空分类会提供“在此分类下新建模板”。如果分类名与内置分类名称相同，会归入内置分类，不会重复创建。
-- **8 个内置模板**：代码审查、重构、编写测试、排查问题、解释代码、总结内容、翻译润色、结构化调研。内置模板跟随界面语言，且为只读；“另存为我的模板”可创建可编辑副本。
+- **模板管理**：新建、编辑、删除、另存为、复制、搜索，并按场景筛选。
+- **场景**：9 个工作分类（职场写作、自媒体创作、文字润色、学习辅导、PPT 制作、编程助手、求职助手、资料分析、生活规划）和“提示流生成器”元分类为只读。可以先建自定义场景再建模板；空场景会提供“在此场景下新建模板”。用 **管理场景** 可以重命名或删除自定义场景。删除自定义场景时，其中的模板会移到 **未归入场景**。自定义场景还可以配置 System Prompt。
+- **50 个工作预设 + 1 个生成器**：每个工作分类 5 个，每个子场景都有独立 System Prompt 和执行模式；另有“提示流生成器”元场景入口。预置内容为简体中文且只读；“另存为我的模板”可创建起始提示词的可编辑副本。
+- **生成场景导入**：生成器先在对话中以列表展示场景、System Prompt 和卡片，并附可复制 JSON。把 JSON 粘贴到模板库，预览后确认即可追加自定义场景；对话框可再次复制规范化 JSON，勾选更新可替换已有自定义场景。过程中不生成文件。
 - **中英文界面**：跟随 DSH 的语言设置。
 - **无需配置**：不需要 API Key、Token、密码、账号或外部服务。
 
@@ -37,7 +40,7 @@
 3. 粘贴仓库地址：
 
    ```text
-   https://github.com/qifenglun1/dsh-plugin-prompt
+   https://github.com/qifenglun1/dsh-prompt
    ```
 
 4. 阅读信任提示并确认安装。DSH 会读取 `package.json` 并安装 bundle。
@@ -49,13 +52,13 @@
 `dsh plugin --profile <name> add ...` 会把安装操作转发给该 Profile 目录中的 pnpm。请使用你实际运行的 Profile（`web`、`desktop` 或自定义名称）：
 
 ```bash
-dsh plugin --profile web add github:qifenglun1/dsh-plugin-prompt
+dsh plugin --profile web add github:qifenglun1/dsh-prompt
 ```
 
 基于 pnpm 的安装也接受等价的 GitHub URL 形式：
 
 ```bash
-dsh plugin --profile web add https://github.com/qifenglun1/dsh-plugin-prompt
+dsh plugin --profile web add https://github.com/qifenglun1/dsh-prompt
 ```
 
 从 Git 安装获取的是源码，不是预构建产物。本包是纯 JavaScript，没有 `prepare`/`build` 脚本，因此 pnpm 不需要在安装时执行构建，也不会要求用户批准构建脚本。
@@ -67,7 +70,7 @@ dsh plugin --profile web add https://github.com/qifenglun1/dsh-plugin-prompt
 把本仓库的绝对路径安装为链接 bundle：
 
 ```bash
-dsh plugin --profile dev add /absolute/path/to/dsh-plugin-prompt
+dsh plugin --profile dev add /absolute/path/to/dsh-prompt
 ```
 
 插件管理器会把 checkout 链接到 Profile 中，修改 `client.js` 后刷新页面即可看到变化。请把 `dev` 换成一次性的测试 Profile，不要把开发链接混入日常使用的 Profile。
@@ -78,7 +81,7 @@ DSH 升级非官方插件的方式是先卸载再重新安装。在 **插件** �
 
 ```bash
 dsh plugin --profile web remove dsh-plugin-prompt
-dsh plugin --profile web add github:qifenglun1/dsh-plugin-prompt
+dsh plugin --profile web add github:qifenglun1/dsh-prompt
 ```
 
 卸载 bundle 会移除侧边栏入口和输入框选择器。已经保存在浏览器中的模板不会被卸载删除；如需彻底清除，请清理下面的存储键。
@@ -90,27 +93,32 @@ dsh plugin --profile web add github:qifenglun1/dsh-plugin-prompt
 | 配置项 | 位置 |
 | --- | --- |
 | 模板 | 在模板库面板或模板编辑器中管理。 |
-| 分类 | 通过“新建分类”创建，或在模板编辑器中输入新分类。 |
+| 场景 | 通过“新建场景”创建，或在模板编辑器中输入新场景；自定义场景可以用 **管理场景** 重命名或删除。 |
+| 场景提示流 | 在空白新会话的输入框上方显示；9 个工作分类胶囊选择或取消分类。职场写作有 10 张卡片，其余分类各 5 张。提示流生成器位于左侧模板库顶部的独立入口条。卡片顺序随模板保存。 |
+| 场景 System Prompt | 工作预置子场景和生成器的 Prompt 固定在代码目录中；自定义场景可在 **管理场景** → **System Prompt** 中追加可选指令。只选择分类、留空或尚未选择分类时不追加。 |
 | 语言 | 跟随 DSH 的语言设置（`English` 或 `简体中文`）。 |
-| 内置模板 | 固定在插件中；“另存为我的模板”可创建可编辑副本。 |
+| 内置模板 | 50 个工作预设 + 1 个生成器；“另存为我的模板”可创建起始提示词的可编辑副本。 |
+| 生成场景 | 在模板库点击 **导入生成场景**，粘贴生成器 JSON，预览后确认导入。 |
 
 ### 浏览器存储
 
-模板和分类保存在 Harness Web 源的 `localStorage` 中：
+模板、场景和场景 System Prompt 保存在 Harness Web 源的 `localStorage` 中：
 
 - `dsh.prompt-library.templates.v1`：用户模板。
-- `dsh.prompt-library.categories.v1`：独立于模板存在的分类。该键缺失时，已保存模板用过的分类会迁移进来。
+- `dsh.prompt-library.categories.v1`：独立于模板存在的场景名称。该键缺失时，已保存模板用过的场景会迁移进来。
+- `dsh.prompt-library.scene-prompts.v1`：自定义场景 System Prompt。
+- `dsh.prompt-library.scene-selection.v1`：每个会话最后选择的场景；仅用于 UI 恢复。
 
-`localStorage` 按 Web 源隔离。不同源、不同浏览器 Profile 或清除站点数据后，数据彼此独立。插件不会把模板写入会话日志，不会发送到服务器，也不会读取凭据。发送消息时，消息文本会像平常一样通过 DSH 到达你配置的模型。
+`localStorage` 按 Web 源隔离。不同源、不同浏览器 Profile 或清除站点数据后，数据彼此独立。插件不会把模板写入会话日志，不会发送到服务器，也不会读取凭据。应用场景 System Prompt 时会通过内部会话命令，因此所选场景 Prompt 也会记录在该会话的命令日志中用于恢复；它不会创建模型消息。发送消息时，消息文本会像平常一样通过 DSH 到达你配置的模型。
 
 ## 使用
 
 ### 侧边栏模板库
 
 1. 点击左侧边栏的书签入口。
-2. 按标题、内容或分类搜索，或点击分类标签筛选。
+2. 按标题、内容或场景搜索，或点击场景标签筛选。
 3. 选择 **插入** 把模板放入当前草稿，**复制** 复制模板，或 **另存为我的模板** 复制内置模板。
-4. 使用 **新建分类** 先创建还没有模板的分类。
+4. 使用 **新建场景** 先创建还没有模板的场景；使用 **管理场景** 可以重命名或删除自定义场景。
 5. 使用面板标题栏的返回箭头回到对话。
 
 ### 输入框选择器
@@ -120,13 +128,71 @@ dsh plugin --profile web add github:qifenglun1/dsh-plugin-prompt
 3. 搜索模板。用方向键移动、回车插入，或直接点击一行。
 4. 模板会插入到光标处（或替换当前选区）。
 
+### 场景提示流（空白新会话）
+
+1. 新建一个空白对话。输入框上方会显示同一行的 9 个工作分类胶囊；默认不选中任何分类，也不显示卡片。
+2. 点击分类胶囊显示该分类下的 5 个子场景卡片。再次点击已选中的胶囊会取消选择并隐藏卡片；只选择分类时不追加额外指令。点击子场景卡片会应用其专属 System Prompt，并插入起始提示词。自定义模板的场景名与内置分类标签一致时，会归入对应分类。生成器使用左侧模板库的独立入口。
+3. 子场景 System Prompt 作为额外指令追加，并对该会话持续生效。发送首条消息后场景选择器会隐藏；需要换场景时请新建空白会话。刷新/恢复会还原最近分类，Host 会从命令日志恢复最近应用的子场景 Prompt。
+4. 点击卡片把完整提示词插入当前光标处；不会自动发送，可以继续编辑。
+5. 使用输入框选择器或侧边栏模板库搜索、管理提示词。没有提示词时，卡片区域会引导你去模板库创建。
+
+### 生成新场景
+
+1. 打开左侧模板库，使用顶部的 **提示流生成器** 入口条。点击 **使用生成器**：有打开对话时，生成器 System Prompt 会生效并插入起始提示词；没有对话时会提示先打开对话。
+2. 填写行业、岗位、日常任务和期望产出后发送。模型先以列表展示场景名称、System Prompt 和卡片，再附上可复制的 JSON 代码块；过程中不生成文件。
+3. 复制 JSON，打开侧边栏模板库，点击 **导入生成场景**。
+4. 粘贴 JSON，点击 **解析并预览**，检查列表后点击 **确认导入**。对话框内也可以随时复制规范化 JSON。
+5. 插件会追加一个自定义场景、该场景的 scene-level System Prompt，以及 1–6 张用户提示词卡片；勾选 **更新同名自定义场景** 时则替换已有场景的 Prompt 和卡片。回到空白会话选择新场景即可使用。导入成功后对话框不会立即关闭，方便复制 JSON；修改 JSON 后再次导入并勾选更新即可替换。
+
+期望的 JSON 结构：
+
+```json
+{
+  "version": 1,
+  "scene": {
+    "name": "场景名称",
+    "systemPrompt": "场景级 System Prompt",
+    "templates": [
+      { "title": "卡片标题", "body": "用户提示词" }
+    ]
+  }
+}
+```
+
+当前插件是 client-only 的，不能自动读取模型回复，因此需要把 JSON 复制到导入对话框；用户确认后，解析和三个存储键的写入是自动的。整个过程不生成文件。生成场景沿用自定义场景模型：一个 scene-level System Prompt + 1–6 张卡片，不保存单卡片 System Prompt 或场景/卡片描述。新名称与已有场景重名会被拒绝；只有勾选更新并确认时才会替换已有自定义场景；内置场景和非法 JSON 始终拒绝。
+
+## 预置目录
+
+50 个工作预置子场景固定在插件内，面向中国大陆用户，内容为简体中文。标题、起始提示词、描述、System Prompt 和执行模式保存在 `client.js` 的 `PRESET_SCENES` 表中；单卡片生成器保存在 `META_SCENES` 表中。预置 System Prompt 只读，追加在 Harness 系统提示之后，不替换上层指令。
+
+| 一级分类 | 子场景 |
+| --- | --- |
+| 职场写作 | 通知公告、工作汇报、请示报告、讲话稿、工作方案、工作日报、工作周报、工作月报、年终总结、工作复盘 |
+| 自媒体创作 | 小红书笔记、抖音短视频脚本、微信公众号文章、视频号文案、社交平台标题 |
+| 文字润色 | 语言润色、文本改写、扩写与缩写、风格转换、错别字与语病检查 |
+| 学习辅导 | 知识点讲解、题目解析、学习计划、考试复习、互动问答 |
+| PPT 制作 | PPT 大纲、工作汇报 PPT、教学演示 PPT、产品介绍 PPT、演讲稿与讲解备注 |
+| 编程助手 | 代码生成、Bug 排查、代码解释、代码优化、代码审查 |
+| 求职助手 | 简历优化、岗位分析、求职信写作、面试模拟、面试问题准备 |
+| 资料分析 | 长文总结、资料整理、关键信息提取、多方案对比、研究分析 |
+| 生活规划 | 旅行行程规划、个人目标计划、购买决策、时间管理、生活问题分析 |
+| 提示流生成器（元场景） | 生成场景提示流（1 张） |
+
+执行模式保存在每个子场景上，并体现在其 System Prompt 中，不再作为卡片徽标显示：
+
+- 用户给出内容后直接处理，只在缺少关键信息时简要询问。
+- 必要时只问当前最需要的信息，信息足够后直接输出，不强制固定步骤。
+- 根据用户回答调整，保持连续对话，不重复已知信息，任务完成后自然结束。
+
+这些模式是 Prompt 约定，不是独立的工作流引擎。
+
 ### 示例
 
 创建一个可复用的代码审查提示词：
 
 1. 打开侧边栏模板库。
 2. 选择 **新建模板**。
-3. 标题填 `审查 PR`，分类填 `编程开发`，内容填：
+3. 标题填 `审查 PR`，场景填 `代码审查`，内容填：
 
    ```text
    请审查这次改动，重点关注正确性、边界条件、性能、安全性和可维护性。
@@ -137,35 +203,42 @@ dsh plugin --profile web add github:qifenglun1/dsh-plugin-prompt
 4. 保存。模板会出现在 **我的模板** 下。
 5. 在任意对话中点击输入框书签，选择该模板，它就会插入到光标处。
 
-### 空分类
+### 空场景
 
-新建分类后会立即选中该分类。在有模板之前，面板会显示“这个分类还没有模板”和“在此分类下新建模板”。点击后者会打开编辑器并预填分类。
+新建场景后会立即选中该场景。在有模板之前，面板会显示“这个场景还没有提示词”和“在此场景下新建模板”。点击后者会打开编辑器并预填场景。
 
-分类目前支持创建和选择，暂不支持重命名或删除。
+场景可以用 **管理场景** 创建、重命名和删除；内置场景为只读。删除自定义场景后，其中的模板会移到 **未归入场景**。
+
+### 场景 System Prompt
+
+1. 50 个工作预置子场景和生成器已经有固定 System Prompt，管理器中不提供编辑。若要给**自定义场景**追加指令，打开 **管理场景**，在该自定义场景上点击 **System Prompt** 编辑。
+2. 自定义场景文本会作为**额外指令**追加，不会替换现有 System Prompt；留空则不追加。预置卡片 Prompt 同样只追加，不替换 Harness 的 System Prompt。
+3. 选择自定义场景会应用其 Prompt；只选择预置分类时不追加，选择预置子场景时应用该子场景的专属 Prompt。尚未选择分类时不追加。选择按空白新会话生效，并在该会话后续消息中保持。
+4. 自定义场景 Prompt 保存在本地。实际应用的 Prompt（自定义或预置）通过内部 `/prompt-library-scene` UI 桥写入会话命令日志；该命令不是 Agent Tool，也不会创建模型消息，可能会出现在命令发现列表中。
 
 ## 兼容性
 
 - 使用 **DeepSeek Harness 0.2.1-rc.2** 构建并验证。
 - 包声明 `engines.dsh: ">=0.2.1-rc.2 <0.3.0"`。安装和 Profile 启动会拒绝范围外的 bundle。
-- 客户端使用公开插槽 `sidebar.panellist`、`main`、`conversation.input.left`、`conversation.input.overlay`，以及输入框的 `InputActions.captureInsertion()` / `insertText()`。
+- 客户端使用公开插槽 `sidebar.panellist`、`main`、`conversation.input.left`、`conversation.input.overlay`、`conversation.input.dock`，以及输入框的 `InputActions.captureInsertion()` / `insertText()`。
 - 如果未来的 DSH 版本修改这些插槽，插件可能需要更新。提交问题时请附上 DSH 版本。
 
 ## 隐私与安全
 
 - 没有自己的分析、遥测或网络请求。
 - 不读取凭据、API Key、Token、Cookie 或账号。
-- 不访问宿主机文件系统；Host 半部分是一个空的 `apply()` 行。
-- 只在本浏览器源的 `localStorage` 中保存模板和分类名称。
+- 不访问宿主机文件系统；Host 半部分只注册 Agent 级 prompt section 并读取会话命令日志。
+- 只在本浏览器源的 `localStorage` 中保存模板、场景名称、场景 System Prompt 和每会话场景选择 UI 提示；所选场景 Prompt 还会记录在该会话的命令日志中用于恢复。
 - 内置提示词随插件分发，不属于用户数据。
-- 安装任何第三方 bundle 都会在 DSH 内执行其代码。安装前请阅读源码；如需固定版本，可使用 `github:qifenglun1/dsh-plugin-prompt#<sha>` 锁定提交。
+- 安装任何第三方 bundle 都会在 DSH 内执行其代码。安装前请阅读源码；如需固定版本，可使用 `github:qifenglun1/dsh-prompt#<sha>` 锁定提交。
 
 ## 项目结构
 
 | 文件 | 用途 |
 | --- | --- |
 | `package.json` | 包元数据、bundle 声明、客户端入口、`dsh.client` inject 列表。 |
-| `index.js` | Host 半部分。空的 `apply()`，让 bundle 在插件清单中有对应行并可开关。 |
-| `client.js` | 浏览器半部分：侧边栏入口、模板库面板、输入框选择器、插入、存储、语言词典。 |
+| `index.js` | Host 半部分：通过 Agent 级 prompt section 应用所选场景 System Prompt，并从会话命令日志恢复；服务不可用时退化为 no-op。 |
+| `client.js` | 浏览器半部分：侧边栏入口、模板库面板、输入框选择器、插入、存储、语言词典、`PRESET_SCENES`（9 个分类、50 个工作子场景）、`META_SCENES` 生成器，以及生成场景 JSON 导入。 |
 | `cordis.patch.yml` | 插入 `prompt-library` 行的 bundle patch。 |
 | `locale/en.json`、`locale/zh.json` | 插件管理器标题和描述。 |
 | `icon.svg` | 插件图标。 |
@@ -176,16 +249,17 @@ dsh plugin --profile web add github:qifenglun1/dsh-plugin-prompt
 
 ```bash
 npm run check
+npm test
 npm pack --dry-run
 ```
 
-`npm run check` 对 `index.js` 和 `client.js` 执行 `node --check`，只需要 Node.js。`npm pack --dry-run` 会打印 npm 将要发布的确切文件；请确认其中包含 `package.json`、`cordis.patch.yml`、`index.js`、`client.js`、语言文件、图标、两份 README 和 `LICENSE`。
+`npm run check` 对 `index.js` 和 `client.js` 执行 `node --check`，只需要 Node.js。`npm test` 运行预置/元场景目录、生成场景解析与导入、场景 System Prompt 存储、payload、恢复和 Host section 测试。`npm pack --dry-run` 会打印 npm 将要发布的确切文件；请确认其中包含 `package.json`、`cordis.patch.yml`、`index.js`、`client.js`、语言文件、图标、两份 README 和 `LICENSE`。
 
 项目没有运行时依赖，也没有构建步骤。浏览器模块使用加载器自带的 React，以及 `dsh.client.inject` 中列出的宿主提供的客户端包。
 
 ## 排错
 
-- **侧边栏图标没有出现**：刷新 Web 界面；确认 **插件** 中的 Prompt Library bundle 已启用；检查浏览器控制台是否有客户端模块加载错误。
+- **侧边栏图标没有出现**：刷新 Web 界面；确认 **插件** 中的场景提示流 bundle 已启用；检查浏览器控制台是否有客户端模块加载错误。
 - **安装失败**：确认 GitHub 仓库根目录包含带 `dsh.bundle.patch` 的 `package.json`，不要把安装地址指向子目录。检查当前 DSH 版本是否满足 `engines.dsh`。如果无法访问 GitHub，可使用插件管理器的镜像或其他安装源。
 - **模板消失**：模板保存在当前浏览器源的 `localStorage`。确认使用同一个 Web 源和浏览器 Profile，且站点数据没有被清除。
 - **模板没有插入**：输入框可能正在提交或裁决。等发送结束后再试。
