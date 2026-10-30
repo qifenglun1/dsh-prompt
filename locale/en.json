@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Prompt Library",
-    "description": "Browse, manage, and insert reusable prompt templates from the sidebar or the composer."
+    "title": "Scene Prompt Flow",
+    "description": "Scene Prompt Flow: 50 preset subscenes across 9 categories, a generator meta scene with structured JSON import, plus a blank-session scene flow, searchable library, and composer picker."
   }
 }
