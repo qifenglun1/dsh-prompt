@@ -81,9 +81,18 @@ dsh plugin --profile dev add /absolute/path/to/dsh-prompt
 DSH 升级非官方插件的方式是先卸载再重新安装。在 **插件** 中卸载 bundle，然后安装新的仓库版本。命令行操作：
 
 ```bash
-dsh plugin --profile web remove dsh-plugin-prompt
+dsh plugin --profile web remove dsh-prompt
 dsh plugin --profile web add github:qifenglun1/dsh-prompt
 ```
+
+> **从 1.x 升级：** 2.0.0 将包名从 `dsh-plugin-prompt` 改为 `dsh-prompt`。请先卸载旧包，再安装新包：
+>
+> ```bash
+> dsh plugin --profile web remove dsh-plugin-prompt
+> dsh plugin --profile web add github:qifenglun1/dsh-prompt
+> ```
+>
+> 浏览器中保存的模板、分类、场景顺序和卡片顺序都会保留。
 
 卸载 bundle 会移除侧边栏入口和输入框选择器。已经保存在浏览器中的模板不会被卸载删除；如需彻底清除，请清理下面的存储键。
 
