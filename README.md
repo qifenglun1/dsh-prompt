@@ -81,9 +81,18 @@ The plugin manager links the checkout into the profile, so edits to `client.js` 
 DSH upgrades non-official plugins by uninstalling and reinstalling them. Uninstall the bundle in **Plugins**, then install the new repository version. With the CLI:
 
 ```bash
-dsh plugin --profile web remove dsh-plugin-prompt
+dsh plugin --profile web remove dsh-prompt
 dsh plugin --profile web add github:qifenglun1/dsh-prompt
 ```
+
+> **Upgrading from 1.x:** version 2.0.0 renames the package from `dsh-plugin-prompt` to `dsh-prompt`. Remove the old package once, then install the new one:
+>
+> ```bash
+> dsh plugin --profile web remove dsh-plugin-prompt
+> dsh plugin --profile web add github:qifenglun1/dsh-prompt
+> ```
+>
+> Templates, categories, scene order, and card order saved in this browser are preserved.
 
 Removing the bundle removes the sidebar entry and composer picker. Templates already saved in the browser are not deleted by uninstalling; clear the keys below if you want to remove them.
 

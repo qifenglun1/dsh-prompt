@@ -1,5 +1,5 @@
 /**
- * Host half of the dsh-plugin-prompt bundle.
+ * Host half of the dsh-prompt bundle.
  *
  * The client owns the library, scene dock, and picker. This half carries the
  * per-Session scene System Prompt into the Host: the client invokes an internal
