@@ -2,7 +2,7 @@
 
 English | [中文](README.zh.md)
 
-Scene Prompt Flow is a DeepSeek Harness Web plugin that keeps reusable prompt templates one click away. It adds a searchable template library to the sidebar, a compact picker to the message composer, and a scene prompt flow above the composer in a blank new conversation. It ships with 50 work preset subscenes across 9 categories plus a one-card Prompt Flow Generator meta scene. Each work subscene has its own concise Simplified-Chinese System Prompt. Choosing a template inserts it at the caret, or starts a new conversation with the template already in the draft when no conversation is open.
+Scene Prompt Flow is a DeepSeek Harness Web plugin that keeps reusable prompt templates one click away. It adds a searchable template library to the sidebar, a compact picker to the message composer, and a scene prompt flow above the composer in a blank new conversation. It ships with 55 work preset subscenes across 10 categories plus a one-card Prompt Flow Generator meta scene. Each work subscene has its own concise Simplified-Chinese System Prompt. Choosing a template inserts it at the caret, or starts a new conversation with the template already in the draft when no conversation is open.
 
 Repository: <https://github.com/qifenglun1/dsh-prompt>
 
@@ -10,13 +10,13 @@ Repository: <https://github.com/qifenglun1/dsh-prompt>
 
 - **Sidebar library** — a bookmark entry in the left sidebar opens a full library panel.
 - **Composer picker** — a small bookmark button in the composer tool row opens a compact, searchable picker without leaving the conversation.
-- **Scene prompt flow** — in a blank new conversation, 9 work category capsules sit above the composer. No category is selected initially, so no prompt cards are shown. Choosing a category reveals its five subscene cards in a single row without a scrollbar; categories with more than five cards add a horizontal scrollbar and a blurred peek of the next card at the right edge so it is clear that more cards exist. On narrow screens the five cards shrink rather than wrapping. Clicking the selected capsule again clears it and hides the cards. Choosing a subscene card applies that subscene's System Prompt and inserts its starter prompt at the caret. The Prompt Flow Generator is shown as a dedicated strip at the top of the left library.
-- **Per-subscene System Prompt** — each of the 50 work presets carries a fixed, dedicated System Prompt. Custom scenes can also add their own extra instructions. Selecting a work category alone adds no extra instructions; selecting a subscene card applies its prompt; deselecting the category clears it.
+- **Scene prompt flow** — in a blank new conversation, 10 work category capsules sit above the composer. No category is selected initially, so no prompt cards are shown. Choosing a category reveals its five subscene cards in a single row without a scrollbar; categories with more than five cards add a horizontal scrollbar and a blurred peek of the next card at the right edge so it is clear that more cards exist. On narrow screens the five cards shrink rather than wrapping. Clicking the selected capsule again clears it and hides the cards. Choosing a subscene card applies that subscene's System Prompt and inserts its starter prompt at the caret. The Prompt Flow Generator is shown as a dedicated strip at the top of the left library.
+- **Per-subscene System Prompt** — each of the 55 work presets carries a fixed, dedicated System Prompt. Custom scenes can also add their own extra instructions. Selecting a work category alone adds no extra instructions; selecting a subscene card applies its prompt; deselecting the category clears it.
 - **Insert at the caret** — templates are inserted into the current draft; a selection is replaced. The edit is undoable through the composer's normal undo history.
 - **No-conversation fallback** — with no conversation open, choosing a template starts a new conversation and puts the template in the draft.
 - **Template management** — create, edit, delete, duplicate, copy, search, and filter templates by scene.
-- **Scenes** — 9 work categories (职场写作, 自媒体创作, 文字润色, 学习辅导, PPT 制作, 编程助手, 求职助手, 资料分析, 生活规划) plus the 提示流生成器 meta category are read-only. Create a custom scene before it has templates; the empty scene offers **New template in this scene**. Use **Manage scenes** to rename or delete custom scenes. Deleting a scene moves its templates to **No scene**. Custom scenes can also configure a System Prompt.
-- **50 work presets + 1 generator** — five work subscenes per category, each with a dedicated System Prompt and an execution mode, plus a single generator entry in the 提示流生成器 meta category. Preset content is Simplified Chinese and read-only; **Save as mine** creates an editable copy of the starter prompt.
+- **Scenes** — 10 work categories (职场写作, 自媒体创作, 文字润色, 学习辅导, PPT 制作, 编程助手, 求职助手, 资料分析, 生活规划, 律师工作流) plus the 提示流生成器 meta category are read-only. Create a custom scene before it has templates; the empty scene offers **New template in this scene**. Use **Manage scenes** to rename or delete custom scenes. Deleting a scene moves its templates to **No scene**. Custom scenes can also configure a System Prompt.
+- **55 work presets + 1 generator** — five work subscenes per category, each with a dedicated System Prompt and an execution mode, plus a single generator entry in the 提示流生成器 meta category. Preset content is Simplified Chinese and read-only; **Save as mine** creates an editable copy of the starter prompt.
 - **Generated-scene import** — the generator first lists the scene, System Prompt, and cards in the conversation and includes a copyable JSON block. Paste that JSON into the library, preview it, and confirm to append a custom scene. The normalized JSON can be copied again; enable the update option to replace an existing custom scene. No file is created.
 - **English and Simplified Chinese UI** — the interface follows the DSH language setting.
 - **No configuration required** — no API key, token, password, account, or external service.
@@ -94,10 +94,10 @@ The plugin has **no Config schema** and no required settings. There is no API ke
 | --- | --- |
 | Templates | Managed in the library panel or the template editor. |
 | Scenes | Created with **New scene** or by typing a new scene in the template editor; custom scenes can be renamed or deleted with **Manage scenes**. |
-| Scene prompt flow | Shown above the composer in a blank new session; 9 work category capsules select or clear a category. Workplace Writing has 10 cards; the other categories have 5. The Prompt Flow Generator is a dedicated strip at the top of the left library. Card order is saved with each template. |
+| Scene prompt flow | Shown above the composer in a blank new session; 10 work category capsules select or clear a category. Workplace Writing has 10 cards; Legal Workflow and the other 8 categories have 5. The Prompt Flow Generator is a dedicated strip at the top of the left library. Card order is saved with each template. |
 | Scene System Prompt | Work preset prompts and the generator prompt are fixed in the catalog. Custom scenes can add optional extra instructions with **Manage scenes** → **System Prompt**. Selecting a category alone, leaving a custom prompt empty, or not choosing a category adds none. |
 | Language | Follows the DSH language setting (`English` or `简体中文`). |
-| Built-in templates | 50 work presets plus 1 generator; **Save as mine** creates an editable copy of the starter prompt. |
+| Built-in templates | 55 work presets plus 1 generator; **Save as mine** creates an editable copy of the starter prompt. |
 | Generated scenes | Use **Import generated scene** in the library, paste the generator JSON, preview, and confirm. |
 
 ### Browser storage
@@ -130,7 +130,7 @@ Templates, scenes, and scene System Prompts are stored in the Harness Web origin
 
 ### Scene prompt flow (blank new session)
 
-1. Start a new, empty conversation. Above the composer, 9 work category capsules appear in one horizontal row; no category is selected and no cards are shown initially.
+1. Start a new, empty conversation. Above the composer, 10 work category capsules appear in one horizontal row; no category is selected and no cards are shown initially.
 2. Choose a category capsule to reveal its five subscene cards. Click the selected capsule again to clear the category and hide its cards; selecting a category alone adds no extra instructions. Clicking a subscene card applies its dedicated System Prompt and inserts its starter prompt. Custom templates whose category matches the built-in category label join that category. The generator has a separate entry in the left library.
 3. The subscene System Prompt is added as extra instructions and stays active for the session. Sending the first message hides the scene selector; start a new blank conversation to choose another category and subscene. Refresh/resume restores the last category; the Host restores the last applied subscene prompt from the Session command log.
 4. Click a card to insert its full prompt at the caret. Inserting does not send the message; you can edit before sending.
@@ -163,7 +163,7 @@ The current client-only plugin cannot read the model's reply automatically, so t
 
 ## Preset catalog
 
-The 50 work preset subscenes are fixed in the plugin and use Simplified Chinese content for Mainland users. Their titles, starter prompts, descriptions, System Prompts, and execution modes live in the `PRESET_SCENES` table in `client.js`; the one-card generator lives in `META_SCENES`. Preset System Prompts are read-only and are appended after the Harness system prompt; they never replace it.
+The 55 work preset subscenes are fixed in the plugin and use Simplified Chinese content for Mainland users. Their titles, starter prompts, descriptions, System Prompts, and execution modes live in the `PRESET_SCENES` table in `client.js`; the one-card generator lives in `META_SCENES`. Preset System Prompts are read-only and are appended after the Harness system prompt; they never replace it.
 
 | Category | Subscenes |
 | --- | --- |
@@ -176,6 +176,7 @@ The 50 work preset subscenes are fixed in the plugin and use Simplified Chinese 
 | 求职助手 | 简历优化、岗位分析、求职信写作、面试模拟、面试问题准备 |
 | 资料分析 | 长文总结、资料整理、关键信息提取、多方案对比、研究分析 |
 | 生活规划 | 旅行行程规划、个人目标计划、购买决策、时间管理、生活问题分析 |
+| 律师工作流 | 接案咨询、法律检索、证据梳理、诉讼策略、合同审查 |
 | 提示流生成器（元场景） | 生成场景提示流（1 张） |
 
 The stored execution mode is reflected in each subscene's System Prompt, not shown as a card badge:
@@ -211,7 +212,7 @@ Scenes can be created, renamed, and deleted with **Manage scenes**. Built-in sce
 
 ### Scene System Prompts
 
-1. The 50 work presets and the generator meta card already have fixed System Prompts; they are not editable in the manager. To add instructions to a **custom** scene, open **Manage scenes**, choose **System Prompt** on that custom scene, and edit the text.
+1. The 55 work presets and the generator meta card already have fixed System Prompts; they are not editable in the manager. To add instructions to a **custom** scene, open **Manage scenes**, choose **System Prompt** on that custom scene, and edit the text.
 2. Custom-scene text is added as **extra instructions**; it does not replace the existing System Prompt. Leave it empty to add none. Preset card prompts are also appended, never substituted for the Harness system prompt.
 3. Selecting a custom scene applies its prompt; selecting a preset category alone adds none, and selecting a preset subscene applies that subscene's dedicated prompt. Before a category is chosen, none are added. The selection is per blank-session start and remains for the rest of that Session.
 4. Custom scene prompts are stored locally. The applied prompt (custom or preset) is recorded in the Session command log through an internal `/prompt-library-scene` UI bridge; the command is not an agent tool and creates no model message. It may appear in command discovery.
@@ -238,7 +239,7 @@ Scenes can be created, renamed, and deleted with **Manage scenes**. Built-in sce
 | --- | --- |
 | `package.json` | Package metadata, bundle declaration, client entry, `dsh.client` inject list. |
 | `index.js` | Host half: applies the selected scene System Prompt through an Agent-scoped prompt section and restores it from the session command log; degrades to a no-op when those services are unavailable. |
-| `client.js` | Browser half: sidebar entry, library panel, composer picker, insertion, storage, locale dictionaries, the `PRESET_SCENES` catalog (9 categories, 50 work subscenes), the `META_SCENES` generator, and generated-scene JSON import. |
+| `client.js` | Browser half: sidebar entry, library panel, composer picker, insertion, storage, locale dictionaries, the `PRESET_SCENES` catalog (10 categories, 55 work subscenes), the `META_SCENES` generator, and generated-scene JSON import. |
 | `cordis.patch.yml` | Bundle patch inserting the `prompt-library` row. |
 | `locale/en.json`, `locale/zh.json` | Plugin Manager title and description. |
 | `icon.svg` | Plugin icon. |

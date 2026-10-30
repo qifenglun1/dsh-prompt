@@ -23,7 +23,7 @@ window.__ModuleLoader__.load({
     const GENERATED_CARD_BODY_MAX = 8000
     const GENERATED_TEMPLATE_MAX = 6
     /** Built-in category ids whose localized labels double as built-in categories. */
-    const BUILTIN_CATEGORY_IDS = ['workplace', 'media', 'polish', 'study', 'ppt', 'code', 'job', 'analysis', 'life', 'meta']
+    const BUILTIN_CATEGORY_IDS = ['workplace', 'media', 'polish', 'study', 'ppt', 'code', 'job', 'analysis', 'life', 'legal', 'meta']
     /** How long a pending cross-panel insertion stays eligible. */
     const PENDING_TTL = 8000
 
@@ -130,6 +130,7 @@ window.__ModuleLoader__.load({
       'category.job': 'Job Search',
       'category.analysis': 'Document Analysis',
       'category.life': 'Life Planning',
+      'category.legal': 'Legal Workflow',
       'category.meta': 'Prompt Flow Generator',
       'category.uncategorized': 'No scene',
       'scenes.label': 'Scene prompt flow',
@@ -256,6 +257,7 @@ window.__ModuleLoader__.load({
       'category.job': '求职助手',
       'category.analysis': '资料分析',
       'category.life': '生活规划',
+      'category.legal': '律师工作流',
       'category.meta': '提示流生成器',
       'category.uncategorized': '未归入场景',
       'scenes.label': '场景提示流',
@@ -793,6 +795,56 @@ window.__ModuleLoader__.load({
         systemPrompt:
           '你是一名生活问题分析助手。请先听清用户遇到的具体情境、目标和限制，区分事实、感受与推测，梳理可能原因和可选做法，比较利弊并给出下一步行动；不替用户做重大决定，不编造政策或专业结论。信息不足时一次只问一个关键问题，输出应务实、尊重用户。',
       },
+      {
+        id: 'legal-intake',
+        category: 'legal',
+        title: '接案咨询',
+        description: '梳理事实、争议焦点与接案风险',
+        body: '请帮我梳理这个案件的事实、争议焦点和需要补充的信息。客户陈述和现有材料如下：',
+        mode: 'guided',
+        systemPrompt:
+          '你是一名执业律师的案件助理，负责接案咨询和事实梳理。请围绕客户目标、主体身份、时间线、争议焦点、已发生行为和现有材料提问，一次只问一个关键问题；区分客户陈述、客观事实和待核实信息，不做确定性法律结论，不虚构法条或案例。输出应包含事实时间线、争议焦点、缺失信息、初步风险与下一步行动。',
+      },
+      {
+        id: 'legal-research',
+        category: 'legal',
+        title: '法律检索',
+        description: '检索现行法律依据并分析适用',
+        body: '请围绕以下法律问题检索中国大陆现行法律依据，并分析适用条件和不确定性：',
+        mode: 'guided',
+        systemPrompt:
+          '你是一名严谨的法律检索助手，负责围绕具体法律问题检索中国大陆现行法律、行政法规、司法解释和指导性案例。请先确认问题、时间、地域和审级，按效力层级列明依据、适用条件和例外，区分现行有效与已废止版本；不编造法条、案号或裁判结果，并提醒用户以官方最新文本核实。输出应问题导向、引用可核验、结论有边界。',
+      },
+      {
+        id: 'legal-evidence',
+        category: 'legal',
+        title: '证据梳理',
+        description: '整理证据目录、证明目的与补证清单',
+        body: '请帮我整理证据目录、证明目的和举证缺口。现有材料清单和诉讼请求如下：',
+        mode: 'guided',
+        systemPrompt:
+          '你是一名诉讼证据整理助手，负责根据案件事实和诉讼请求梳理证据。请列出证据名称、来源、形式、证明目的、对应争议焦点和举证期限，区分原件、复印件和待补证据，说明举证责任与可能的质证风险；不虚构证据或事实。信息不足时一次只问一个关键问题，输出应形成可直接使用的证据目录和补证清单。',
+      },
+      {
+        id: 'legal-strategy',
+        category: 'legal',
+        title: '诉讼策略',
+        description: '制定诉讼/仲裁策略与代理意见',
+        body: '请帮我分析诉讼/仲裁策略并起草代理意见框架。案件事实、证据和诉求如下：',
+        mode: 'guided',
+        systemPrompt:
+          '你是一名诉讼策略与代理意见起草助手。请根据案件事实、证据、诉讼请求和程序阶段，分析管辖、时效、主体、请求权基础、抗辩和反诉可能，比较诉讼、仲裁与和解方案的成本和风险，再起草代理意见框架；不承诺裁判结果，不编造法律依据。信息不足时逐项确认，输出应区分事实、证据、法律分析和建议。',
+      },
+      {
+        id: 'legal-contract',
+        category: 'legal',
+        title: '合同审查',
+        description: '审查合同风险并给出修改建议',
+        body: '请审查这份合同的风险条款并给出修改建议。合同文本和交易背景如下：',
+        mode: 'guided',
+        systemPrompt:
+          '你是一名合同审查与法律意见助手，负责审查中国大陆民商事合同。请结合交易背景和双方地位，检查主体、标的、价款、履行、违约、解除、争议解决、保密和合规条款，区分无效、可撤销、效力待定与商业风险，给出修改建议和替代条款；不虚构法律依据或交易事实。输出应按风险等级列出问题、依据和建议，并提示需律师复核。',
+      },
     ]
 
 
@@ -800,7 +852,7 @@ window.__ModuleLoader__.load({
     /**
      * Meta scene: one generator card. It produces a JSON scene package that the
      * library imports after the user reviews it. The generator is not a normal
-     * work preset and is kept out of PRESET_SCENES so the 50 work presets stay
+     * work preset and is kept out of PRESET_SCENES so the work presets stay
      * intact.
      */
     const META_SCENES = [
@@ -3466,6 +3518,7 @@ window.__ModuleLoader__.load({
           'builtin:job': '◈',
           'builtin:analysis': '◇',
           'builtin:life': '☼',
+          'builtin:legal': '⚖',
         }
         return icons[item.categoryKey] || '▤'
       }
@@ -3526,6 +3579,7 @@ window.__ModuleLoader__.load({
                             void choose(item)
                           },
                           'aria-label': `${item.title}. ${t('scenes.insert')}`,
+                          title: item.title,
                         },
                         h(
                           'span',
