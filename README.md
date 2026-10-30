@@ -11,6 +11,7 @@ Repository: <https://github.com/qifenglun1/dsh-prompt>
 - **Sidebar library** — a bookmark entry in the left sidebar opens a full library panel.
 - **Composer picker** — a small bookmark button in the composer tool row opens a compact, searchable picker without leaving the conversation.
 - **Scene prompt flow** — in a blank new conversation, 10 work category capsules sit above the composer. No category is selected initially, so no prompt cards are shown. Choosing a category reveals its five subscene cards in a single row without a scrollbar; categories with more than five cards add a horizontal scrollbar and a blurred peek of the next card at the right edge so it is clear that more cards exist. On narrow screens the five cards shrink rather than wrapping. Clicking the selected capsule again clears it and hides the cards. Choosing a subscene card applies that subscene's System Prompt and inserts its starter prompt at the caret. The Prompt Flow Generator is shown as a dedicated strip at the top of the left library.
+- **Reorder in the left library** — open **Reorder** in the left library to drag scenes or cards into a custom order. Each row also has visible move up/down buttons, and reorder handles support **Alt+↑/↓**; on touch screens use the buttons. The order is saved in this browser and reflected in the new-session scene prompt flow. **Restore defaults** clears all custom scene and card order after confirmation. **Cancel** restores the order that was in effect when the dialog opened; **Done** keeps the current order. The new-session scene area is read-only for ordering; it has no drag handles or sort controls.
 - **Per-subscene System Prompt** — each of the 55 work presets carries a fixed, dedicated System Prompt. Custom scenes can also add their own extra instructions. Selecting a work category alone adds no extra instructions; selecting a subscene card applies its prompt; deselecting the category clears it.
 - **Insert at the caret** — templates are inserted into the current draft; a selection is replaced. The edit is undoable through the composer's normal undo history.
 - **No-conversation fallback** — with no conversation open, choosing a template starts a new conversation and puts the template in the draft.
@@ -94,7 +95,7 @@ The plugin has **no Config schema** and no required settings. There is no API ke
 | --- | --- |
 | Templates | Managed in the library panel or the template editor. |
 | Scenes | Created with **New scene** or by typing a new scene in the template editor; custom scenes can be renamed or deleted with **Manage scenes**. |
-| Scene prompt flow | Shown above the composer in a blank new session; 10 work category capsules select or clear a category. Workplace Writing has 10 cards; Legal Workflow and the other 8 categories have 5. The Prompt Flow Generator is a dedicated strip at the top of the left library. Card order is saved with each template. |
+| Scene prompt flow | Shown above the composer in a blank new session; 10 work category capsules select or clear a category. Workplace Writing has 10 cards; Legal Workflow and the other 8 categories have 5. Scene and card order are adjusted from the left library's Reorder dialog; the new-session area only reflects the saved order. The Prompt Flow Generator is a dedicated strip at the top of the left library. |
 | Scene System Prompt | Work preset prompts and the generator prompt are fixed in the catalog. Custom scenes can add optional extra instructions with **Manage scenes** → **System Prompt**. Selecting a category alone, leaving a custom prompt empty, or not choosing a category adds none. |
 | Language | Follows the DSH language setting (`English` or `简体中文`). |
 | Built-in templates | 55 work presets plus 1 generator; **Save as mine** creates an editable copy of the starter prompt. |
@@ -108,6 +109,8 @@ Templates, scenes, and scene System Prompts are stored in the Harness Web origin
 - `dsh.prompt-library.categories.v1` — scene names that exist independently of templates. When this key is missing, scene names already used by saved templates are migrated into it.
 - `dsh.prompt-library.scene-prompts.v1` — custom scene System Prompts.
 - `dsh.prompt-library.scene-selection.v1` — the last scene selected per Session; a UI hint only.
+- `dsh.prompt-library.scene-order.v1` — custom scene order set from the left library's Reorder dialog.
+- `dsh.prompt-library.card-order.v1` — custom card order per scene set from the same dialog.
 
 `localStorage` is scoped to the Web origin. A different origin, browser profile, or cleared browser storage has separate data. The plugin does not write templates to the session log, does not send data to a server, and does not read credentials. Applying a scene System Prompt uses an internal Session command, so the selected scene prompt is also recorded in that Session's command log for restore; it does not create a model message. When you send a message, its text reaches your configured model through DSH as usual.
 
@@ -229,7 +232,7 @@ Scenes can be created, renamed, and deleted with **Manage scenes**. Built-in sce
 - No analytics, telemetry, or network calls of its own.
 - No credential, API key, token, cookie, or account access.
 - No host filesystem access; the Host half only registers an Agent-scoped prompt section and reads the Session command log.
-- Only templates, scene names, scene System Prompts, and the per-Session scene selection UI hint are stored in this browser origin's `localStorage`. The selected scene prompt is also recorded in that Session's command log for restore.
+- Only templates, scene names, scene System Prompts, custom scene/card order, and the per-Session scene selection UI hint are stored in this browser origin's `localStorage`. The selected scene prompt is also recorded in that Session's command log for restore.
 - Built-in prompt text ships with the plugin and is not user data.
 - Installing any third-party bundle executes its code inside DSH. Read the source before installing, and pin a commit with `github:qifenglun1/dsh-prompt#<sha>` if you need a fixed revision.
 
