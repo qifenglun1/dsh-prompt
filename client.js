@@ -1866,7 +1866,7 @@ window.__ModuleLoader__.load({
 .dsh-pl-scenes-tabs::-webkit-scrollbar{height:6px}
 .dsh-pl-scenes-tabs::-webkit-scrollbar-thumb{background:var(--dsw-alias-label-secondary);border-radius:999px}
 .dsh-pl-scenes-tabs::-webkit-scrollbar-track{background:transparent}
-.dsh-pl-scene-tab{flex:none;appearance:none;border:1px solid var(--dsw-alias-border-l1);border-radius:999px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:11.5px;line-height:17px;padding:3px 8px;cursor:pointer}
+.dsh-pl-scene-tab{flex:none;appearance:none;border:1px solid var(--dsw-alias-border-l1);border-radius:999px;background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:14px;line-height:20px;padding:3px 8px;cursor:pointer}
 .dsh-pl-scene-tab:hover{background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary)}
 .dsh-pl-scene-tab[data-active="true"]{background:var(--dsw-alias-brand-primary);border-color:transparent;color:var(--dsw-alias-bg-base)}
 .dsh-pl-scene-tab:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:2px}
