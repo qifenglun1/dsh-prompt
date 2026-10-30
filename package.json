@@ -1,7 +1,7 @@
 {
   "name": "dsh-plugin-prompt",
-  "version": "1.4.1",
-  "description": "Scene Prompt Flow for DeepSeek Harness: 50 preset subscenes across 9 categories, a prompt-flow generator meta scene, structured JSON import, and a searchable template library and composer picker.",
+  "version": "1.5.0",
+  "description": "Scene Prompt Flow for DeepSeek Harness: 55 preset subscenes across 10 categories, a legal workflow scene, a prompt-flow generator meta scene, structured JSON import, and a searchable template library and composer picker.",
   "license": "MIT",
   "author": "qifenglun1",
   "homepage": "https://github.com/qifenglun1/dsh-prompt#readme",

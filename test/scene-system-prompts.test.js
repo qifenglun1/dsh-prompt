@@ -108,6 +108,7 @@ test('scene System Prompt dictionaries keep EN/ZH key parity', () => {
     'category.job',
     'category.analysis',
     'category.life',
+    'category.legal',
     'category.meta',
   ]) {
     assert.equal(typeof testApi.EN[key], 'string')
@@ -117,15 +118,15 @@ test('scene System Prompt dictionaries keep EN/ZH key parity', () => {
   }
 })
 
-test('preset catalog has 9 categories, 50 unique subscenes, and dedicated prompts', () => {
+test('preset catalog has 10 categories, 55 unique subscenes, and dedicated prompts', () => {
   const { testApi } = loadClient()
   const presets = testApi.PRESET_SCENES
-  assert.equal(presets.length, 50)
-  assert.equal(new Set(presets.map((preset) => preset.id)).size, 50)
-  assert.equal(new Set(presets.map((preset) => preset.title)).size, 50)
-  assert.equal(new Set(presets.map((preset) => preset.systemPrompt)).size, 50)
+  assert.equal(presets.length, 55)
+  assert.equal(new Set(presets.map((preset) => preset.id)).size, 55)
+  assert.equal(new Set(presets.map((preset) => preset.title)).size, 55)
+  assert.equal(new Set(presets.map((preset) => preset.systemPrompt)).size, 55)
   assert.equal([...new Set(presets.map((preset) => preset.category))].join('|'), testApi.BUILTIN_CATEGORY_IDS.slice(0, -1).join('|'))
-  assert.equal(new Set(presets.map((preset) => preset.category)).size, 9)
+  assert.equal(new Set(presets.map((preset) => preset.category)).size, 10)
 
   const counts = {}
   const modes = new Set(['one-shot', 'guided', 'interactive'])
@@ -143,9 +144,9 @@ test('preset catalog has 9 categories, 50 unique subscenes, and dedicated prompt
   const t = (key) => testApi.EN[key] ?? key
   const items = testApi.buildItems(t)
   const builtins = items.filter((item) => item.builtin)
-  assert.equal(builtins.length, 51)
+  assert.equal(builtins.length, 56)
   const workBuiltins = builtins.filter((item) => item.categoryKey !== 'builtin:meta')
-  assert.equal(workBuiltins.length, 50)
+  assert.equal(workBuiltins.length, 55)
   const byCategory = {}
   for (const item of workBuiltins) {
     byCategory[item.categoryKey] = (byCategory[item.categoryKey] || 0) + 1
@@ -160,6 +161,7 @@ test('preset catalog has 9 categories, 50 unique subscenes, and dedicated prompt
   assert.equal(builtins.filter((item) => item.categoryKey === 'builtin:meta').length, 1)
   assert.equal(testApi.sceneCardsFor(items, 'builtin:workplace').length, 10)
   assert.equal(testApi.sceneCardsFor(items, 'builtin:life').length, 5)
+  assert.equal(testApi.sceneCardsFor(items, 'builtin:legal').length, 5)
   assert.equal(testApi.sceneCardsFor(items, 'builtin:meta').length, 1)
 })
 
@@ -174,7 +176,7 @@ test('meta generator has one card, an output list, and copyable JSON instruction
   assert.ok(meta[0].systemPrompt.includes('"scene"'))
   assert.ok(meta[0].systemPrompt.includes('"templates"'))
   assert.ok(meta[0].body.length > 0)
-  assert.equal(testApi.BUILTIN_CATEGORY_IDS.length, 10)
+  assert.equal(testApi.BUILTIN_CATEGORY_IDS.length, 11)
   assert.equal(testApi.BUILTIN_CATEGORY_IDS.at(-1), 'meta')
   assert.equal(testApi.scenePromptFor('builtin:meta'), '')
 
@@ -353,7 +355,7 @@ test('existing user scenes are preserved when their labels match built-in catego
   assert.ok(userItem, 'user template survives preset integration')
   assert.equal(userItem.categoryKey, 'user:公文写作')
   assert.equal(testApi.scenePromptFor('user:公文写作'), '保留我的场景指令。')
-  assert.equal(items.filter((item) => item.builtin).length, 51)
+  assert.equal(items.filter((item) => item.builtin).length, 56)
 })
 
 test('scene command payload round-trips Unicode and rejects invalid payloads', () => {
