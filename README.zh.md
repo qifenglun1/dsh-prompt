@@ -5,6 +5,7 @@
 场景提示流是一个 DeepSeek Harness Web 插件：把可复用的提示词模板放到侧边栏、输入框旁边，并在空白新会话的输入框上方提供“场景提示流”。插件内置 10 个工作分类、55 个预置子场景，以及 1 个单卡片“提示流生成器”元场景。每个工作子场景都有独立的简体中文 System Prompt。选择模板后会插入到当前光标处；没有打开的对话时，会新建对话并把模板填入草稿。
 
 仓库地址：<https://github.com/qifenglun1/dsh-prompt>
+npm：<https://www.npmjs.com/package/dsh-plugin-prompt>
 
 ## 功能
 
@@ -31,6 +32,32 @@
 插件是一个 **bundle**，不是独立网页。请通过 DSH 的插件管理器安装，不要直接打开 `client.js`。
 
 仓库根目录就是可安装包根目录，包含 `package.json`、`cordis.patch.yml`、`index.js` 和 `client.js`；没有 monorepo 子目录，也没有构建步骤。
+
+## 从 npm 安装
+
+包已发布到 npm：`dsh-plugin-prompt`。
+
+1. 在 DSH 中打开 **插件**。
+2. 选择 **添加插件** → **安装第三方插件**。
+3. 粘贴包名：
+
+   ```text
+   dsh-plugin-prompt
+   ```
+
+4. 阅读信任提示并确认安装。
+
+命令行：
+
+```bash
+dsh plugin --profile web add dsh-plugin-prompt
+```
+
+固定本次版本：
+
+```bash
+dsh plugin --profile web add dsh-plugin-prompt@3.0.0
+```
 
 ## 从 GitHub 安装
 
@@ -78,18 +105,23 @@ dsh plugin --profile dev add /absolute/path/to/dsh-prompt
 
 ### 更新与卸载
 
-DSH 升级非官方插件的方式是先卸载再重新安装。在 **插件** 中卸载 bundle，然后安装新的仓库版本。命令行操作：
+DSH 升级非官方插件的方式是先卸载再重新安装。在 **插件** 中卸载 bundle，然后安装新版本。命令行操作（npm 包）：
 
 ```bash
-dsh plugin --profile web remove dsh-prompt
-dsh plugin --profile web add github:qifenglun1/dsh-prompt
+dsh plugin --profile web remove dsh-plugin-prompt
+dsh plugin --profile web add dsh-plugin-prompt
 ```
 
-> **从 1.x 升级：** 2.0.0 将包名从 `dsh-plugin-prompt` 改为 `dsh-prompt`。请先卸载旧包，再安装新包：
+> **从 1.x 或 2.x 升级：** 3.0.0 通过 npm 发布为 `dsh-plugin-prompt`，并更改了 loader id。请先卸载此前安装的 bundle：
 >
 > ```bash
+> # 从 2.x（`dsh-prompt`）升级
+> dsh plugin --profile web remove dsh-prompt
+> dsh plugin --profile web add dsh-plugin-prompt
+>
+> # 从 1.x（`dsh-plugin-prompt`）升级
 > dsh plugin --profile web remove dsh-plugin-prompt
-> dsh plugin --profile web add github:qifenglun1/dsh-prompt
+> dsh plugin --profile web add dsh-plugin-prompt
 > ```
 >
 > 浏览器中保存的模板、分类、场景顺序和卡片顺序都会保留。
