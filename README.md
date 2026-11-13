@@ -5,6 +5,7 @@ English | [中文](README.zh.md)
 Scene Prompt Flow is a DeepSeek Harness Web plugin that keeps reusable prompt templates one click away. It adds a searchable template library to the sidebar, a compact picker to the message composer, and a scene prompt flow above the composer in a blank new conversation. It ships with 55 work preset subscenes across 10 categories plus a one-card Prompt Flow Generator meta scene. Each work subscene has its own concise Simplified-Chinese System Prompt. Choosing a template inserts it at the caret, or starts a new conversation with the template already in the draft when no conversation is open.
 
 Repository: <https://github.com/qifenglun1/dsh-prompt>
+npm: <https://www.npmjs.com/package/dsh-plugin-prompt>
 
 ## Features
 
@@ -31,6 +32,32 @@ Repository: <https://github.com/qifenglun1/dsh-prompt>
 The plugin is a **bundle**, not a standalone web page. Install it through DSH's plugin manager; do not try to open `client.js` directly.
 
 The repository root is the installable package root. It contains `package.json`, `cordis.patch.yml`, `index.js`, and `client.js`; there is no monorepo subdirectory and no build step.
+
+## Install from npm
+
+The package is published on npm as `dsh-plugin-prompt`.
+
+1. In DSH, open **Plugins**.
+2. Choose **Add plugin** → **Install a third-party plugin**.
+3. Paste the package name:
+
+   ```text
+   dsh-plugin-prompt
+   ```
+
+4. Review the trust notice and confirm the installation.
+
+With the CLI:
+
+```bash
+dsh plugin --profile web add dsh-plugin-prompt
+```
+
+To pin this release:
+
+```bash
+dsh plugin --profile web add dsh-plugin-prompt@3.0.0
+```
 
 ## Install from GitHub
 
@@ -78,18 +105,23 @@ The plugin manager links the checkout into the profile, so edits to `client.js` 
 
 ### Update and uninstall
 
-DSH upgrades non-official plugins by uninstalling and reinstalling them. Uninstall the bundle in **Plugins**, then install the new repository version. With the CLI:
+DSH upgrades non-official plugins by uninstalling and reinstalling them. Uninstall the bundle in **Plugins**, then install the new version. With the CLI (npm package):
 
 ```bash
-dsh plugin --profile web remove dsh-prompt
-dsh plugin --profile web add github:qifenglun1/dsh-prompt
+dsh plugin --profile web remove dsh-plugin-prompt
+dsh plugin --profile web add dsh-plugin-prompt
 ```
 
-> **Upgrading from 1.x:** version 2.0.0 renames the package from `dsh-plugin-prompt` to `dsh-prompt`. Remove the old package once, then install the new one:
+> **Upgrading from 1.x or 2.x:** 3.0.0 is distributed on npm as `dsh-plugin-prompt` and changes the loader id. Remove the previously installed bundle first:
 >
 > ```bash
+> # from 2.x (`dsh-prompt`)
+> dsh plugin --profile web remove dsh-prompt
+> dsh plugin --profile web add dsh-plugin-prompt
+>
+> # from 1.x (`dsh-plugin-prompt`)
 > dsh plugin --profile web remove dsh-plugin-prompt
-> dsh plugin --profile web add github:qifenglun1/dsh-prompt
+> dsh plugin --profile web add dsh-plugin-prompt
 > ```
 >
 > Templates, categories, scene order, and card order saved in this browser are preserved.

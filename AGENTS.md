@@ -4,7 +4,7 @@ Instructions for coding agents working in this repository. Read this before chan
 
 ## TL;DR
 
-- This repository **is** the installable DSH plugin package: `dsh-prompt`.
+- This repository **is** the installable DSH plugin package: `dsh-plugin-prompt` (npm: `dsh-plugin-prompt`).
 - Target runtime: **DeepSeek Harness 0.2.1-rc.2**; `engines.dsh` is `>=0.2.1-rc.2 <0.3.0`.
 - Plain JavaScript, **no build step, no runtime dependencies**.
 - Edit the plugin here, then install/verify through the `plugin_manager` tool. Never hand-edit the DSH profile's `package.json` or `cordis.patch.yml`.
@@ -34,7 +34,7 @@ Public repository: `https://github.com/qifenglun1/dsh-prompt` (also declared in 
 | `package.json` | Package metadata, bundle declaration, `exports`, `dsh.client` inject list, `engines.dsh`. |
 | `index.js` | Host half: registers the internal scene-selection command and an Agent-scoped prompt section; restores the last selection from the Session command log. |
 | `client.js` | Entire browser half: slots, UI, composer insertion, storage, locale dictionaries, styles, the 55-row `PRESET_SCENES` catalog, the one-card `META_SCENES` generator, and generated-scene JSON import. |
-| `cordis.patch.yml` | Bundle patch inserting the `prompt-library` row for `dsh-prompt`. |
+| `cordis.patch.yml` | Bundle patch inserting the `prompt-library` row for `dsh-plugin-prompt`. |
 | `locale/en.json`, `locale/zh.json` | Plugin Manager display title/description. |
 | `icon.svg` | Plugin icon (original artwork; keep it valid SVG, under 256 KiB). |
 | `README.md`, `README.zh.md` | User-facing docs. Keep install/usage/config in sync in both languages. |
@@ -135,12 +135,13 @@ The plugin is a **persistent profile bundle**, not a runtime/dynamic Cordis pack
 6. For client-only changes, refresh the Web GUI. HMR may not reload a plain linked client module without a dev server. If the manifest or patch changed, reinstall and restart if needed.
 7. Exercise the actual capability (sidebar panel, composer picker, insertion) or report exactly what could not be verified.
 
-The current development profile links this repository as `dsh-prompt`. That is a persistent **linked development install**: it survives restarts while this directory exists. For a clean install test, use a disposable profile as described in `README.md`; do not disturb the user's main profile data.
+The current development profile links this repository as `dsh-plugin-prompt`. That is a persistent **linked development install**: it survives restarts while this directory exists. For a clean install test, use a disposable profile as described in `README.md`; do not disturb the user's main profile data.
 
 User-facing installation is documented in `README.md`:
 
-- Desktop/Web: **Plugins → Add plugin → Install a third-party plugin**, then the GitHub address or `github:<owner>/<repo>`.
+- Desktop/Web: **Plugins → Add plugin → Install a third-party plugin**, then the npm package name `dsh-plugin-prompt`, the GitHub address, or `github:<owner>/<repo>`.
 - CLI: `dsh plugin --profile <profile> add <spec>` (or `remove`), as documented in the README. The Desktop app's Plugins page is the supported UI path; do not invent install commands.
+- npm: `dsh plugin --profile <profile> add dsh-plugin-prompt` (or install the registry package as a plain dependency when embedding it).
 - Updating a non-official bundle: uninstall, then reinstall.
 
 ## 7. Architecture and extension points
@@ -152,8 +153,8 @@ User-facing installation is documented in `README.md`:
   - `"dsh.bundle.patch": "./cordis.patch.yml"`
   - `"dsh.client": { "platform": "web", "immediately": true, "inject": [...] }`
   - `"engines.dsh": ">=0.2.1-rc.2 <0.3.0"`
-- `client.js` loader id must remain `dsh-prompt`.
-- `cordis.patch.yml` inserts row id `prompt-library` with module name `dsh-prompt`.
+- `client.js` loader id must remain `dsh-plugin-prompt`.
+- `cordis.patch.yml` inserts row id `prompt-library` with module name `dsh-plugin-prompt`.
 
 ### Slots used
 
@@ -246,7 +247,7 @@ Release steps:
 2. Update both READMEs and any install URL text.
 3. Run `npm run check`, `npm pack --dry-run`, and `git diff --check`.
 4. Commit and push only after explicit authorization; otherwise leave the changes for the user to review, commit, and push.
-5. Do not publish a `.tgz`; users install from the Git repository or the plugin manager.
+5. Publish to npm with `npm publish` only after the version bump and checks. Do not commit a generated `.tgz` or attach one to a release; users install the registry package by name or from the Git repository.
 
 ## 10. Current known limitations
 
